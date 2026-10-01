@@ -26,6 +26,7 @@ from ..io import project_root, sha256_file, utc_now, write_json
 from ..metrics import regression_metrics
 from ..uncertainty import gaussian_process, predict_mean_std
 from .common import candidate_estimators
+from .mixture import scheffe_quadratic_estimator
 
 warnings.filterwarnings("ignore", category=ConvergenceWarning, module="sklearn.gaussian_process")
 
@@ -60,6 +61,8 @@ def _fit_gpr_group_means(X_train: pd.DataFrame, y_train: pd.Series, groups: pd.S
 def _fit_final(model_name: str, X, y, groups=None):
     if model_name == "gpr" and groups is not None:
         return _fit_gpr_group_means(X, pd.Series(np.asarray(y)), pd.Series(np.asarray(groups)))
+    if model_name == "scheffe_quadratic":
+        return scheffe_quadratic_estimator().fit(X, y)
     estimators = candidate_estimators(X.shape[1])
     estimator = estimators[model_name]
     estimator.fit(X, y)
@@ -113,7 +116,9 @@ def _training_report_text(task, metrics, best_by_target, gate):
     if task == "sensory":
         lines.append("The source has 597 rating rows, but only 30 independent blend recipes. Validation holds out complete `sample_code` groups.")
     if task in {"chemistry", "direct_recipe"}:
-        lines.extend(["", "Feature scaling is fitted inside each fold through sklearn Pipelines."])
+        lines.extend(["", "Any learned feature scaling is fitted inside each fold through sklearn Pipelines."])
+    if task == "chemistry":
+        lines.append("The quadratic Scheffe expansion is deterministic: four mixture-linear terms plus six pairwise interactions, fit without an intercept.")
     return "\n".join(lines) + "\n"
 
 
@@ -125,6 +130,7 @@ def train_recipe_chemistry(master_path: str | Path | None = None) -> dict:
     X_linear = frame[LINEAR_RECIPE_FEATURES]
     groups = frame["sample_code"].to_numpy()
     model_specs = {
+        "scheffe_quadratic": ("scheffe_quadratic", X_all),
         "ridge_a": ("ridge", X_linear),
         "ridge_b_no_intercept": ("ridge_b_no_intercept", X_all),
         "pls": ("pls", X_all),
@@ -164,6 +170,8 @@ def train_recipe_chemistry(master_path: str | Path | None = None) -> dict:
                 if family == "ridge_b_no_intercept":
                     from sklearn.linear_model import Ridge
                     estimator = Ridge(alpha=1.0, fit_intercept=False)
+                elif family == "scheffe_quadratic":
+                    estimator = scheffe_quadratic_estimator()
                 else:
                     estimator = candidate_estimators(X.shape[1]).get(family)
                 if estimator is None:
@@ -197,7 +205,7 @@ def train_recipe_chemistry(master_path: str | Path | None = None) -> dict:
 
     gate_targets = [name for name, info in best_by_target.items() if info["selected"]["metrics"]["mae"] < info["baseline"]["mae"] and info["selected"]["metrics"]["rmse"] < info["baseline"]["rmse"]]
     gate = {"status": "PASS" if gate_targets else "FAIL", "improved_targets": gate_targets, "summary": f"{len(gate_targets)}/{len(CHEMISTRY_BASE)} base chemistry targets improved both OOF MAE and RMSE over the mean baseline."}
-    metrics = {"task": "recipe_to_chemistry", "cv_method": "LeaveOneOut by unique sample_code (n=30; within-design reconstruction)", "features": RECIPE_FEATURES, "targets": CHEMISTRY_BASE, "by_target": summaries, "gate": gate, "optional_models_available": [name for name in ("xgboost", "catboost") if name in model_specs]}
+    metrics = {"task": "recipe_to_chemistry", "cv_method": "LeaveOneOut by unique sample_code (n=30; within-design reconstruction)", "features": RECIPE_FEATURES, "targets": CHEMISTRY_BASE, "candidate_model_notes": {"scheffe_quadratic": "Second-order Scheffe mixture model: no intercept, all ingredient proportions plus all pairwise interactions; fit inside each LOO fold."}, "by_target": summaries, "gate": gate, "optional_models_available": [name for name in ("xgboost", "catboost") if name in model_specs]}
     model_dir = root / "artifacts/models/chemistry"
     model_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump({"estimators": selected_estimators, "uncertainty_estimators": uncertainty_estimators, "feature_order": RECIPE_FEATURES, "feature_order_by_target": selected_features, "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}}, model_dir / "model.joblib")

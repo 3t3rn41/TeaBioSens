@@ -46,7 +46,9 @@ except Exception as exc:
 master = predictor.master
 design = predictor.design_space
 direct_gate = predictor.direct_metrics.get("gate", {})
-ai_enabled = direct_gate.get("status") == "PASS"
+permutation_gate = predictor.trustworthiness_metrics.get("permutation_test", {})
+gate_b_permutation_p = permutation_gate.get("gate_b_empirical_p")
+ai_enabled = direct_gate.get("status") == "PASS" and gate_b_permutation_p is not None and gate_b_permutation_p < 0.05
 warning_banner()
 st.caption("当前系统只接受 4.0 g 总量、0.5 g 步长定义的 32 个合法离散格点。所有验证指标均为当前设计空间内部重建结果。")
 
@@ -78,9 +80,9 @@ with tab_overview:
 - 两个尚未观测的合法格点，在实际打样前仍未得到直接验证。
 """)
     if not ai_enabled:
-        st.error("当前数据不足以支持可靠自动推荐。页面仍展示实测配方排序和两个待验证格点的模型估计；预测点不会进入 Top 推荐。")
+        st.error(f"自动推荐可信度尚未通过：Gate B 的标签置换 p={gate_b_permutation_p:.3f}（需 < 0.05）。页面仍展示实测配方排序和两个待验证格点的模型估计；预测点不会进入 Top 推荐。" if gate_b_permutation_p is not None else "自动推荐可信度尚未验证：缺少标签置换检验结果。页面仍展示实测配方排序和两个待验证格点的模型估计；预测点不会进入 Top 推荐。")
     else:
-        st.success("Recipe → Sensory 的 Overall score OOF MAE 与 RMSE 均优于训练折均值基线；预测排序可用于实验候选筛选。")
+        st.success(f"Recipe → Sensory 的 Overall score OOF MAE/RMSE 优于均值基线，且置换检验 p={gate_b_permutation_p:.3f} < 0.05；预测排序可用于实验候选筛选。")
 
 with tab_known:
     st.subheader("30 个已知配方 · 实测优先")
@@ -143,7 +145,7 @@ with tab_predict:
 with tab_rank:
     st.subheader("32 点离散设计空间排序")
     if not ai_enabled:
-        st.error("当前数据不足以支持可靠自动推荐。系统仍会列出实测点的真实排序和两个待补实验点，但预测点不会进入 Top 推荐。")
+        st.error("当前预测未通过标签置换可信度检查。系统仍会列出实测点的真实排序和两个待补实验点，但预测点不会进入 Top 推荐。")
     objective_options = {
         "最大化 Overall score": "maximize_overall",
         "最大化 Taste": "maximize_taste",

@@ -18,7 +18,7 @@
     ]
   ],
   "objective": "maximize_overall",
-  "eligible_count": 32,
+  "eligible_count": 30,
   "top_k_returned": 10,
   "risk_lambda": 1.0,
   "disagreement_gamma": 1.0,
@@ -33,7 +33,7 @@
     "tf_pct",
     "tr_pct"
   ],
-  "ai_recommendation_enabled": true,
+  "ai_recommendation_enabled": false,
   "recipe_sensory_gate": {
     "status": "PASS",
     "primary_target": "overall_score",
@@ -46,6 +46,13 @@
       "overall_score"
     ],
     "summary": "Overall-score OOF MAE/RMSE both improve over the mean baseline; 6/6 targets improved both metrics."
+  },
+  "recommendation_credibility_gate": {
+    "raw_oof_gate_status": "PASS",
+    "permutation_p_value": 0.48258706467661694,
+    "permutation_alpha": 0.05,
+    "permutation_validation_status": "NOT_VALIDATED",
+    "automated_prediction_recommendations_enabled": false
   },
   "scientific_note": "within-design reconstruction only; GPR spread and model disagreement are not calibrated probabilities."
 }

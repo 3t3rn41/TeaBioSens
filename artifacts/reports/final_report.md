@@ -1,6 +1,6 @@
 # TeaBioSens 茶叶智能拼配 V0.4 原型报告
 
-生成日期：2026-10-01 10:45 UTC
+生成日期：2026-10-01 12:15 UTC
 
 > 本报告中的预测均为当前公开数据和当前实验设计内的模型估计。配方仅为建模/实验候选，未经食品研发实验和法规验证，不用于直接生产。
 
@@ -32,6 +32,7 @@
 | Target | Model | MAE | RMSE | R² | Spearman |
 |---|---|---:|---:|---:|---:|
 | `protein_ug_g` | `mean` | 16.6078 | 21.3372 | -0.0702 | -0.9999 |
+| `protein_ug_g` | `scheffe_quadratic` | 22.2720 | 29.5286 | -1.0495 | -0.3332 |
 | `protein_ug_g` | `ridge_a` | 16.8988 | 22.5331 | -0.1935 | -0.0214 |
 | `protein_ug_g` | `ridge_b_no_intercept` | 17.0251 | 24.0037 | -0.3543 | -0.1097 |
 | `protein_ug_g` | `pls` | 17.0195 | 22.6454 | -0.2054 | -0.0160 |
@@ -41,6 +42,7 @@
 | `protein_ug_g` | `catboost` | 18.1932 | 23.3846 | -0.2854 | -0.1525 |
 | `protein_ug_g` | `nearest_recipe` | 19.4722 | 24.7444 | -0.4392 | -0.0795 |
 | `tss_ug_g` | `mean` | 408.5857 | 464.3661 | -0.0702 | -1.0000 |
+| `tss_ug_g` | `scheffe_quadratic` | 481.9049 | 621.3819 | -0.9162 | -0.0821 |
 | `tss_ug_g` | `ridge_a` | 416.2228 | 488.1049 | -0.1824 | -0.0049 |
 | `tss_ug_g` | `ridge_b_no_intercept` | 439.5487 | 557.8613 | -0.5445 | -0.1787 |
 | `tss_ug_g` | `pls` | 417.3745 | 490.8263 | -0.1956 | -0.0085 |
@@ -50,6 +52,7 @@
 | `tss_ug_g` | `catboost` | 457.9169 | 516.6266 | -0.3246 | -0.2009 |
 | `tss_ug_g` | `nearest_recipe` | 485.0620 | 587.4332 | -0.7125 | -0.2360 |
 | `tp_mggae_g` | `mean` | 4.3319 | 5.6741 | -0.0702 | -1.0000 |
+| `tp_mggae_g` | `scheffe_quadratic` | 5.5994 | 6.9378 | -0.5999 | -0.1368 |
 | `tp_mggae_g` | `ridge_a` | 4.6170 | 5.6831 | -0.0736 | 0.0808 |
 | `tp_mggae_g` | `ridge_b_no_intercept` | 6.6127 | 7.6654 | -0.9531 | 0.0363 |
 | `tp_mggae_g` | `pls` | 4.6457 | 5.7017 | -0.0806 | 0.0905 |
@@ -59,6 +62,7 @@
 | `tp_mggae_g` | `catboost` | 4.8372 | 6.1516 | -0.2579 | -0.2191 |
 | `tp_mggae_g` | `nearest_recipe` | 5.7752 | 7.0778 | -0.6652 | -0.2362 |
 | `caffeine_pct` | `mean` | 1.0677 | 1.2504 | -0.0702 | -1.0000 |
+| `caffeine_pct` | `scheffe_quadratic` | 1.1941 | 1.4712 | -0.4815 | -0.0229 |
 | `caffeine_pct` | `ridge_a` | 0.9785 | 1.2276 | -0.0315 | 0.0937 |
 | `caffeine_pct` | `ridge_b_no_intercept` | 1.2283 | 1.5238 | -0.5894 | 0.0216 |
 | `caffeine_pct` | `pls` | 0.9728 | 1.2315 | -0.0381 | 0.1097 |
@@ -68,6 +72,7 @@
 | `caffeine_pct` | `catboost` | 1.0518 | 1.3084 | -0.1717 | -0.0229 |
 | `caffeine_pct` | `nearest_recipe` | 1.3689 | 1.6354 | -0.8307 | -0.1016 |
 | `catechin_pct` | `mean` | 0.0769 | 0.0881 | -0.0702 | -1.0000 |
+| `catechin_pct` | `scheffe_quadratic` | 0.0808 | 0.0965 | -0.2858 | 0.1177 |
 | `catechin_pct` | `ridge_a` | 0.0716 | 0.0851 | -0.0003 | 0.2107 |
 | `catechin_pct` | `ridge_b_no_intercept` | 0.0719 | 0.0884 | -0.0781 | 0.1809 |
 | `catechin_pct` | `pls` | 0.0718 | 0.0854 | -0.0067 | 0.2285 |
@@ -77,6 +82,7 @@
 | `catechin_pct` | `catboost` | 0.0688 | 0.0833 | 0.0419 | 0.2423 |
 | `catechin_pct` | `nearest_recipe` | 0.0914 | 0.1164 | -0.8685 | 0.1427 |
 | `tf_pct` | `mean` | 0.0832 | 0.1006 | -0.0702 | -0.9999 |
+| `tf_pct` | `scheffe_quadratic` | 0.0890 | 0.1095 | -0.2679 | 0.2237 |
 | `tf_pct` | `ridge_a` | 0.0666 | 0.0855 | 0.2269 | 0.4827 |
 | `tf_pct` | `ridge_b_no_intercept` | 0.0792 | 0.0949 | 0.0467 | 0.3906 |
 | `tf_pct` | `pls` | 0.0669 | 0.0859 | 0.2194 | 0.4782 |
@@ -86,6 +92,7 @@
 | `tf_pct` | `catboost` | 0.0806 | 0.0985 | -0.0261 | 0.2337 |
 | `tf_pct` | `nearest_recipe` | 0.1081 | 0.1324 | -0.8563 | 0.3029 |
 | `tr_pct` | `mean` | 0.5771 | 0.6612 | -0.0702 | -1.0000 |
+| `tr_pct` | `scheffe_quadratic` | 0.6976 | 0.8123 | -0.6152 | -0.1003 |
 | `tr_pct` | `ridge_a` | 0.5534 | 0.6560 | -0.0533 | 0.2298 |
 | `tr_pct` | `ridge_b_no_intercept` | 0.5604 | 0.6621 | -0.0731 | 0.0612 |
 | `tr_pct` | `pls` | 0.5550 | 0.6587 | -0.0622 | 0.2071 |
@@ -95,6 +102,7 @@
 | `tr_pct` | `catboost` | 0.6196 | 0.7327 | -0.3141 | -0.0434 |
 | `tr_pct` | `nearest_recipe` | 0.6900 | 0.8606 | -0.8131 | -0.0984 |
 | `ph` | `mean` | 0.1487 | 0.1779 | -0.0702 | -0.9997 |
+| `ph` | `scheffe_quadratic` | 0.1793 | 0.2159 | -0.5755 | -0.0261 |
 | `ph` | `ridge_a` | 0.1407 | 0.1683 | 0.0428 | 0.3017 |
 | `ph` | `ridge_b_no_intercept` | 0.6042 | 0.6273 | -12.3008 | 0.1941 |
 | `ph` | `pls` | 0.1415 | 0.1687 | 0.0378 | 0.3030 |
@@ -104,6 +112,7 @@
 | `ph` | `catboost` | 0.1583 | 0.1827 | -0.1277 | 0.1069 |
 | `ph` | `nearest_recipe` | 0.2097 | 0.2533 | -1.1676 | -0.3704 |
 | `malic_acid_mg_g` | `mean` | 0.3664 | 0.4978 | -0.0702 | -1.0000 |
+| `malic_acid_mg_g` | `scheffe_quadratic` | 0.5237 | 0.6668 | -0.9196 | -0.3731 |
 | `malic_acid_mg_g` | `ridge_a` | 0.3899 | 0.5266 | -0.1976 | 0.0011 |
 | `malic_acid_mg_g` | `ridge_b_no_intercept` | 0.5815 | 0.6958 | -1.0903 | -0.1008 |
 | `malic_acid_mg_g` | `pls` | 0.3929 | 0.5302 | -0.2139 | -0.0225 |
@@ -113,6 +122,7 @@
 | `malic_acid_mg_g` | `catboost` | 0.4055 | 0.5329 | -0.2260 | -0.1613 |
 | `malic_acid_mg_g` | `nearest_recipe` | 0.4587 | 0.6171 | -0.6445 | -0.3256 |
 | `citric_acid_mg_g` | `mean` | 1.4520 | 1.7048 | -0.0702 | -1.0000 |
+| `citric_acid_mg_g` | `scheffe_quadratic` | 1.8034 | 2.1487 | -0.7001 | 0.0136 |
 | `citric_acid_mg_g` | `ridge_a` | 1.3640 | 1.6391 | 0.0107 | 0.2801 |
 | `citric_acid_mg_g` | `ridge_b_no_intercept` | 1.4168 | 1.6856 | -0.0463 | 0.2022 |
 | `citric_acid_mg_g` | `pls` | 1.3620 | 1.6440 | 0.0048 | 0.2663 |
@@ -122,6 +132,7 @@
 | `citric_acid_mg_g` | `catboost` | 1.5066 | 1.7373 | -0.1114 | 0.1364 |
 | `citric_acid_mg_g` | `nearest_recipe` | 2.1698 | 2.5503 | -1.3950 | -0.0939 |
 | `ascorbic_acid_mg_g` | `mean` | 2.2047 | 2.2974 | -0.0702 | -1.0000 |
+| `ascorbic_acid_mg_g` | `scheffe_quadratic` | 2.6637 | 2.9865 | -0.8085 | -0.1786 |
 | `ascorbic_acid_mg_g` | `ridge_a` | 2.2970 | 2.4690 | -0.2361 | -0.2089 |
 | `ascorbic_acid_mg_g` | `ridge_b_no_intercept` | 2.1920 | 2.3591 | -0.1284 | -0.3646 |
 | `ascorbic_acid_mg_g` | `pls` | 2.3043 | 2.4826 | -0.2496 | -0.2133 |
@@ -131,6 +142,7 @@
 | `ascorbic_acid_mg_g` | `catboost` | 2.5068 | 2.7030 | -0.4814 | -0.3362 |
 | `ascorbic_acid_mg_g` | `nearest_recipe` | 2.5846 | 3.3778 | -1.3133 | -0.1959 |
 | `oxalic_acid_mg_g` | `mean` | 0.3716 | 0.5123 | -0.0702 | -1.0000 |
+| `oxalic_acid_mg_g` | `scheffe_quadratic` | 0.4707 | 0.5902 | -0.4204 | 0.1003 |
 | `oxalic_acid_mg_g` | `ridge_a` | 0.3808 | 0.5054 | -0.0415 | 0.2823 |
 | `oxalic_acid_mg_g` | `ridge_b_no_intercept` | 0.4275 | 0.6198 | -0.5664 | 0.0563 |
 | `oxalic_acid_mg_g` | `pls` | 0.3816 | 0.5066 | -0.0465 | 0.2854 |
@@ -140,6 +152,7 @@
 | `oxalic_acid_mg_g` | `catboost` | 0.3636 | 0.4880 | 0.0288 | 0.2160 |
 | `oxalic_acid_mg_g` | `nearest_recipe` | 0.5551 | 0.7581 | -1.3436 | 0.0757 |
 | `galic_acid_mg_g` | `mean` | 0.0959 | 0.1227 | -0.0702 | -1.0000 |
+| `galic_acid_mg_g` | `scheffe_quadratic` | 0.1191 | 0.1503 | -0.6061 | 0.0948 |
 | `galic_acid_mg_g` | `ridge_a` | 0.0889 | 0.1121 | 0.1058 | 0.4221 |
 | `galic_acid_mg_g` | `ridge_b_no_intercept` | 0.2985 | 0.3213 | -6.3426 | 0.1095 |
 | `galic_acid_mg_g` | `pls` | 0.0895 | 0.1128 | 0.0953 | 0.4207 |
@@ -149,6 +162,7 @@
 | `galic_acid_mg_g` | `catboost` | 0.0978 | 0.1204 | -0.0314 | 0.2668 |
 | `galic_acid_mg_g` | `nearest_recipe` | 0.1132 | 0.1345 | -0.2856 | 0.4108 |
 | `succinic_acid_mg_g` | `mean` | 1.9252 | 2.5340 | -0.0702 | -1.0000 |
+| `succinic_acid_mg_g` | `scheffe_quadratic` | 2.4140 | 3.0779 | -0.5789 | -0.0016 |
 | `succinic_acid_mg_g` | `ridge_a` | 1.9827 | 2.5714 | -0.1020 | 0.1297 |
 | `succinic_acid_mg_g` | `ridge_b_no_intercept` | 1.8810 | 2.5392 | -0.0746 | 0.0839 |
 | `succinic_acid_mg_g` | `pls` | 1.9858 | 2.5788 | -0.1084 | 0.1297 |
@@ -158,6 +172,7 @@
 | `succinic_acid_mg_g` | `catboost` | 2.2024 | 2.6806 | -0.1976 | 0.0474 |
 | `succinic_acid_mg_g` | `nearest_recipe` | 3.1031 | 3.8530 | -1.4743 | -0.1373 |
 | `l_theanine_mg_g` | `mean` | 0.2840 | 0.3550 | -0.0702 | -1.0000 |
+| `l_theanine_mg_g` | `scheffe_quadratic` | 0.3650 | 0.4381 | -0.6300 | 0.0587 |
 | `l_theanine_mg_g` | `ridge_a` | 0.2859 | 0.3563 | -0.0780 | 0.1982 |
 | `l_theanine_mg_g` | `ridge_b_no_intercept` | 0.3356 | 0.4294 | -0.5659 | -0.0334 |
 | `l_theanine_mg_g` | `pls` | 0.2873 | 0.3575 | -0.0854 | 0.2007 |
@@ -168,6 +183,8 @@
 | `l_theanine_mg_g` | `nearest_recipe` | 0.3695 | 0.4215 | -0.5082 | 0.1293 |
 
 M3 Gate：**PASS** — 8/15 base chemistry targets improved both OOF MAE and RMSE over the mean baseline.
+
+除既有基线与模型外，M3 还比较标准二次 Scheffé 混合模型：无截距，含各原料比例一阶项及所有两两交互项 `x_i x_j`；全部项在每个 LOO 训练折内拟合。
 
 最近配方基线与 Mean baseline、Ridge、PLS、GPR、Random Forest、XGBoost、CatBoost 一并比较。可选后端可用情况记录于 `recipe_chemistry_metrics.json`。
 
@@ -330,6 +347,14 @@ Overall score 选中模型 `pls`：MAE 4.5911、RMSE 5.9042；Mean baseline：MA
 
 当 Gate B 未通过时，Demo 将关闭未测点的自动推荐资格，仍展示实测配方排序与补点实验计划。
 
+### Gate B 可信度补充：置换检验与逐折敏感性
+
+对六项样品级感官均值做 200 次联合行置换，并在每次置换中重跑候选模型和逐目标选模。六项目标同时改善的经验 p 值为 0.099502（19 次达到或超过观测值；置换率95%精确区间 5.817%–14.438%）；Overall-score Gate B 的经验 p 值为 0.482587（96 次通过；置换率95%精确区间 40.901%–55.159%）。
+
+按预设 α=0.05，六项目标同时改善未达到显著性，Overall-only Gate B 在无关联置换下仍有 96/200 次通过。因此原始 OOF 数值门槛虽为 PASS，自动预测推荐可信度门槛为 **NOT VALIDATED**；未观测点预测不会进入 Top-K 自动推荐。
+
+置换检验以无配方—感官关联时配方行与感官向量可交换为条件；它不是外部验证，也不能替代新配方实测。逐折误差与删一评估折敏感性见 `artifacts/reports/gate_b_validation/`。
+
 ## 6. 双预测路径、不确定性与设计空间状态
 
 Path A：Recipe→Chemistry→Sensory；Path B：Recipe→Sensory。对每个目标同时保存两条路径预测和绝对差异。优化器对未测点的风险分数采用 `predicted objective − λ × uncertainty − γ × model disagreement`；已测点排序直接使用真实感官均值。
@@ -339,7 +364,7 @@ GPR predictive standard deviation 是模型估计的 spread，不是经覆盖率
 
 ## 7. 32 点设计空间排序与下一次实验
 
-排序器检查全部 32 个合法点；其中 30 个采用实测值，2 个采用带风险惩罚的预测。Gate B 自动推荐状态：**enabled**。
+排序器检查全部 32 个合法点；其中 30 个采用实测值，2 个采用带风险惩罚的预测。Gate B 自动推荐状态：**disabled**。
 
 ### 当前 Top 候选
 
@@ -382,4 +407,4 @@ GPR predictive standard deviation 是模型估计的 spread，不是经覆盖率
 - Streamlit 页面：`app/app.py`；启动：`streamlit run app/app.py`。
 - 完整复现：`python scripts/07_run_full_pipeline.py`；测试：`pytest -q`。
 
-**Demo 判定：** 可演示。 **自动推荐 Gate：** 通过。 **指导实验判定：** 预测点仅用于安排两项验证实验，不作为生产依据。
+**Demo 判定：** 可演示。 **原始 Gate B 数值门槛：** PASS。 **自动预测推荐可信度：** 未通过；只展示实测排序，未观测预测仅作实验估计。 **指导实验判定：** 预测点仅用于安排两项验证实验，不作为生产依据。

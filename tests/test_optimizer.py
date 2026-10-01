@@ -14,6 +14,7 @@ class FakePredictor:
         self.design_space = RecipeDesignSpace(pd.read_csv(root / "data/processed/blend_master.csv"))
         self.chemistry_metrics = {"by_target": {}}
         self.direct_metrics = {"gate": {"status": "PASS"}}
+        self.trustworthiness_metrics = {}
 
     def predict_recipe(self, recipe_pct):
         recipe = np.asarray(recipe_pct)
@@ -48,3 +49,22 @@ def test_ranker_returns_all_points_and_two_experiments_reproducibly(tmp_path):
     pd.testing.assert_frame_equal(first["table"], second["table"])
     assert (tmp_path / "a/design_space_32.csv").exists()
     assert (tmp_path / "a/next_experiments.csv").exists()
+
+
+def test_raw_oof_pass_without_permutation_validation_disables_predictions(tmp_path):
+    result = rank_design_space(FakePredictor(), top_k=10, output_dir=tmp_path)
+    assert result["summary"]["recipe_sensory_gate"]["status"] == "PASS"
+    assert result["summary"]["ai_recommendation_enabled"] is False
+    unobserved = result["table"][result["table"]["design_status"] == "UNOBSERVED_VALID"]
+    assert not unobserved["recommendation_eligible"].any()
+    observed = result["table"][result["table"]["design_status"] == "OBSERVED"]
+    assert observed["recommendation_eligible"].all()
+
+
+def test_significant_selection_adjusted_permutation_enables_predictions(tmp_path):
+    predictor = FakePredictor()
+    predictor.trustworthiness_metrics = {"permutation_test": {"gate_b_empirical_p": 0.01}}
+    result = rank_design_space(predictor, top_k=10, output_dir=tmp_path)
+    assert result["summary"]["ai_recommendation_enabled"] is True
+    unobserved = result["table"][result["table"]["design_status"] == "UNOBSERVED_VALID"]
+    assert unobserved["recommendation_eligible"].all()

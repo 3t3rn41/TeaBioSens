@@ -32,6 +32,8 @@ class TeaPredictor:
         self.chemistry_metrics = json.loads((self.root / "artifacts/reports/recipe_chemistry_metrics.json").read_text(encoding="utf-8"))
         self.direct_metrics = json.loads((self.root / "artifacts/reports/recipe_sensory_metrics.json").read_text(encoding="utf-8"))
         self.sensory_metrics = json.loads((self.root / "artifacts/reports/chemistry_sensory_metrics.json").read_text(encoding="utf-8"))
+        trust_path = self.root / "artifacts/reports/gate_b_validation/gate_b_trustworthiness.json"
+        self.trustworthiness_metrics = json.loads(trust_path.read_text(encoding="utf-8")) if trust_path.exists() else {}
 
     @staticmethod
     def _single_row(values, columns):

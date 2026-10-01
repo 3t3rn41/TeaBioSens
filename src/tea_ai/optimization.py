@@ -20,6 +20,7 @@ DEFAULT_WEIGHTED_SENSORY = {
     "taste": 0.35,
     "solubility": 0.15,
 }
+RECOMMENDATION_PERMUTATION_ALPHA = 0.05
 
 
 def _objective(values: dict, objective: str, weights: dict[str, float] | None = None) -> float:
@@ -114,7 +115,22 @@ def rank_design_space(
 
     design = predictor.design_space
     model_gate = predictor.direct_metrics.get("gate", {})
-    ai_recommendation_enabled = model_gate.get("status") == "PASS"
+    trustworthiness = getattr(predictor, "trustworthiness_metrics", {}) or {}
+    permutation_test = trustworthiness.get("permutation_test", {})
+    gate_b_permutation_p = permutation_test.get("gate_b_empirical_p")
+    credibility_gate_pass = (
+        gate_b_permutation_p is not None
+        and np.isfinite(float(gate_b_permutation_p))
+        and float(gate_b_permutation_p) < RECOMMENDATION_PERMUTATION_ALPHA
+    )
+    ai_recommendation_enabled = model_gate.get("status") == "PASS" and credibility_gate_pass
+    recommendation_gate = {
+        "raw_oof_gate_status": model_gate.get("status", "UNKNOWN"),
+        "permutation_p_value": float(gate_b_permutation_p) if gate_b_permutation_p is not None else None,
+        "permutation_alpha": RECOMMENDATION_PERMUTATION_ALPHA,
+        "permutation_validation_status": "PASS" if credibility_gate_pass else "NOT_VALIDATED",
+        "automated_prediction_recommendations_enabled": bool(ai_recommendation_enabled),
+    }
     observed_lookup = {tuple(float(v) for v in row[DESIGN_COLUMNS_G]): row for _, row in design.master.iterrows()}
     rows = []
     for point in sorted(enumerate_valid_design_points()):
@@ -175,6 +191,7 @@ def rank_design_space(
             "model_anomaly_reasons": prediction.get("model_anomaly_reasons", []) if status != "OBSERVED" else [],
             "recommendation_eligible": bool(constraint_ok and (status == "OBSERVED" or (ai_recommendation_enabled and not prediction.get("model_anomaly", False)))),
             "ai_recommendation_gate": model_gate.get("status", "UNKNOWN"),
+            "gate_b_permutation_p_value": recommendation_gate["permutation_p_value"],
             "chemistry_constraints_experimental": bool(unavailable and allow_experimental_chemistry_constraints),
             "measured_sensory": measured_sensory,
             "measured_chemistry": ({target: float(measured_row[target]) for target in CHEMISTRY_BASE} if measured_row is not None else {}),
@@ -209,6 +226,7 @@ def rank_design_space(
         "reliable_chemistry_constraints": sorted(reliable),
         "ai_recommendation_enabled": ai_recommendation_enabled,
         "recipe_sensory_gate": model_gate,
+        "recommendation_credibility_gate": recommendation_gate,
         "scientific_note": "within-design reconstruction only; GPR spread and model disagreement are not calibrated probabilities.",
     }
     out = Path(output_dir or root / "artifacts/optimization")

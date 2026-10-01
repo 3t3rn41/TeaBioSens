@@ -58,6 +58,8 @@ def main():
     chem = load_json(ROOT / "artifacts/reports/recipe_chemistry_metrics.json")
     sens = load_json(ROOT / "artifacts/reports/chemistry_sensory_metrics.json")
     direct = load_json(ROOT / "artifacts/reports/recipe_sensory_metrics.json")
+    trust_path = ROOT / "artifacts/reports/gate_b_validation/gate_b_trustworthiness.json"
+    trust = load_json(trust_path) if trust_path.exists() else None
     opt = load_json(ROOT / "artifacts/optimization/optimization_summary.json")
     top = pd.read_csv(ROOT / "artifacts/optimization/top_candidates.csv")
     next_exp = pd.read_csv(ROOT / "artifacts/optimization/next_experiments.csv")
@@ -90,7 +92,11 @@ def main():
         f"验证：{chem['cv_method']}。主目标为 15 个基础理化指标；4 个派生 ratio 在推理时由预测分子和分母重建。",
     ]
     append_comparison(lines, "按目标比较的 OOF 指标", chem["by_target"])
-    lines.extend([f"M3 Gate：**{chem['gate']['status']}** — {chem['gate']['summary']}", "", "最近配方基线与 Mean baseline、Ridge、PLS、GPR、Random Forest、XGBoost、CatBoost 一并比较。可选后端可用情况记录于 `recipe_chemistry_metrics.json`。", ""])
+    lines.extend([
+        f"M3 Gate：**{chem['gate']['status']}** — {chem['gate']['summary']}", "",
+        "除既有基线与模型外，M3 还比较标准二次 Scheffé 混合模型：无截距，含各原料比例一阶项及所有两两交互项 `x_i x_j`；全部项在每个 LOO 训练折内拟合。", "",
+        "最近配方基线与 Mean baseline、Ridge、PLS、GPR、Random Forest、XGBoost、CatBoost 一并比较。可选后端可用情况记录于 `recipe_chemistry_metrics.json`。", "",
+    ])
 
     lines.extend(["## 4. Chemistry → Sensory", "", f"验证：{sens['cv_method']}。源表含 {sens['rating_rows']} 评价记录、{sens['independent_blends']} 个独立配方。OOF 选择以每个配方感官均值为评价目标；另保存逐评价记录误差，未将评分行数描述为独立产品数。", ""])
     append_comparison(lines, "按目标与特征组比较的 OOF 指标", sens["by_target"])
@@ -107,6 +113,14 @@ def main():
         f"Overall score 选中模型 `{overall['selected_model']}`：MAE {selected['mae']:.4f}、RMSE {selected['rmse']:.4f}；Mean baseline：MAE {baseline['mae']:.4f}、RMSE {baseline['rmse']:.4f}。",
         "", "当 Gate B 未通过时，Demo 将关闭未测点的自动推荐资格，仍展示实测配方排序与补点实验计划。", "",
     ])
+    if trust:
+        perm = trust["permutation_test"]
+        lines.extend([
+            "### Gate B 可信度补充：置换检验与逐折敏感性", "",
+            f"对六项样品级感官均值做 {perm['permutations']} 次联合行置换，并在每次置换中重跑候选模型和逐目标选模。六项目标同时改善的经验 p 值为 {perm['six_of_six_empirical_p']:.6f}（{perm['six_of_six_exceedances']} 次达到或超过观测值；置换率95%精确区间 {perm['six_of_six_null_rate_95pct_exact_ci'][0]:.3%}–{perm['six_of_six_null_rate_95pct_exact_ci'][1]:.3%}）；Overall-score Gate B 的经验 p 值为 {perm['gate_b_empirical_p']:.6f}（{perm['gate_b_exceedances']} 次通过；置换率95%精确区间 {perm['gate_b_null_rate_95pct_exact_ci'][0]:.3%}–{perm['gate_b_null_rate_95pct_exact_ci'][1]:.3%}）。", "",
+            f"按预设 α=0.05，六项目标同时改善未达到显著性，Overall-only Gate B 在无关联置换下仍有 {perm['gate_b_exceedances']}/{perm['permutations']} 次通过。因此原始 OOF 数值门槛虽为 PASS，自动预测推荐可信度门槛为 **{'PASS' if opt['ai_recommendation_enabled'] else 'NOT VALIDATED'}**；{'未观测点预测不会进入 Top-K 自动推荐' if not opt['ai_recommendation_enabled'] else '未观测点可进入带风险标记的 Top-K'}。", "",
+            "置换检验以无配方—感官关联时配方行与感官向量可交换为条件；它不是外部验证，也不能替代新配方实测。逐折误差与删一评估折敏感性见 `artifacts/reports/gate_b_validation/`。", "",
+        ])
 
     lines.extend([
         "## 6. 双预测路径、不确定性与设计空间状态", "",
@@ -142,7 +156,7 @@ def main():
         "- 32 点全表、下一次实验、Top 候选：`artifacts/optimization/`。",
         "- Streamlit 页面：`app/app.py`；启动：`streamlit run app/app.py`。",
         "- 完整复现：`python scripts/07_run_full_pipeline.py`；测试：`pytest -q`。", "",
-        f"**Demo 判定：** 可演示。 **自动推荐 Gate：** {'通过' if gate['status'] == 'PASS' else '未通过；仅实测排序和补点估计可用'}。 **指导实验判定：** 预测点仅用于安排两项验证实验，不作为生产依据。", "",
+        f"**Demo 判定：** 可演示。 **原始 Gate B 数值门槛：** {gate['status']}。 **自动预测推荐可信度：** {'通过' if opt['ai_recommendation_enabled'] else '未通过；只展示实测排序，未观测预测仅作实验估计'}。 **指导实验判定：** 预测点仅用于安排两项验证实验，不作为生产依据。", "",
     ])
     output = ROOT / "artifacts/reports/final_report.md"
     output.parent.mkdir(parents=True, exist_ok=True)

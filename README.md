@@ -7,7 +7,7 @@ TeaBlend AI is a reproducible, leakage-aware prototype for recipe-to-chemistry a
 - The source sheet contains 597 sensory rating rows but only 30 independent recipe blends. All validation keeps each `sample_code` wholly within one fold.
 - Current coverage is 30/32 = 93.75% of the enumerated discrete space. The model's Leave-One-Blend-Out scores measure within-design reconstruction, not arbitrary or industrial recipe generalization.
 - Measured blend results are used directly for the 30 observed points. Model predictions, uncertainty estimates and path disagreement are used for the two legal but unobserved points.
-- A Gaussian Process spread is a model-based uncertainty estimate, not a calibrated confidence interval. Gate B disables automated prediction-based recommendations when the direct Overall score model does not beat both mean-baseline OOF MAE and RMSE.
+- A Gaussian Process spread is a model-based uncertainty estimate, not a calibrated confidence interval. Prediction-based recommendations are enabled only when the direct Overall score beats both mean-baseline OOF metrics and the selection-adjusted joint-label permutation test has p < 0.05. Missing validation results or a failed permutation check disable automated prediction-based Top-K recommendations.
 - All candidate blends are for modeling and experimental design only. They are not validated for production or food-regulatory compliance.
 
 ## Setup
@@ -52,7 +52,10 @@ python scripts/07_run_full_pipeline.py
 # 9. Run the full contract, leakage, design-space, optimizer and inference tests
 pytest -q
 
-# 10. Launch the interactive demo
+# 10. Run the selection-adjusted credibility check (200 joint-label permutations)
+python scripts/08_validate_gate_b.py --permutations 200 --seed 42 --n-jobs 7
+
+# 11. Launch the interactive demo
 streamlit run app/app.py
 ```
 
@@ -67,6 +70,9 @@ If the optional XGBoost or CatBoost package is unavailable, training records tha
 - `artifacts/optimization/design_space_32.csv`: one row for every legal design point.
 - `artifacts/optimization/next_experiments.csv`: the two missing valid recipes, prioritized for physical measurement.
 - `artifacts/optimization/top_candidates.csv`: measured-first candidate ranking under Gate B and user constraints.
+- `artifacts/reports/gate_b_validation/`: 200-run joint-label permutation test and per-fold sensitivity analysis; generate with `python scripts/08_validate_gate_b.py`. Pass `--permutations 500` for finer p-value resolution.
+
+Recipe → Chemistry compares a quadratic Scheffé mixture model (`sum(beta_i*x_i) + sum(beta_ij*x_i*x_j)`, no intercept) against the existing baselines and model families using the same Leave-One-Blend-Out folds.
 
 ## V2 legal design
 
@@ -80,5 +86,7 @@ The legal points are enumerated from these weighing levels and the fixed 4.0 g t
 | Black tea | 0.5, 1.0, 1.5, 2.0, 2.5 g |
 
 Any blend outside those 32 points is `INVALID_DESIGN_POINT` and is not returned as a recommendation. The two missing points should be physically prepared and measured to bring the defined discrete design to 100% coverage.
+
+Use the blank lab-entry files under `data/confirmatory_teabiosens/` to record the two missing blends. Coverage changes only after actual chemistry and sensory results are supplied and validated; predicted values are not measurements.
 
 The underlying `RecipeSchema` and diversity selector accept a dynamic number of ingredient columns; the current four-tea levels and UI are the TeaBioSens data adapter in `configs/feature_schema.yaml`.
