@@ -1,0 +1,81 @@
+{
+  "task": "chemistry_to_sensory",
+  "targets": [
+    "appearance",
+    "infusion_color",
+    "aroma",
+    "taste",
+    "solubility",
+    "overall_score"
+  ],
+  "selected_models": {
+    "appearance": {
+      "model": "pls",
+      "feature_set": "chemistry_a",
+      "metrics": {
+        "mae": 3.0653276417996156,
+        "rmse": 4.055522573159695,
+        "r2": 0.35408226864142844,
+        "spearman": 0.6627363737486095,
+        "n": 30
+      }
+    },
+    "infusion_color": {
+      "model": "gpr",
+      "feature_set": "chemistry_a",
+      "metrics": {
+        "mae": 3.9643513848358043,
+        "rmse": 4.919414416666822,
+        "r2": 0.36478373371834594,
+        "spearman": 0.6333704115684093,
+        "n": 30
+      }
+    },
+    "aroma": {
+      "model": "pls",
+      "feature_set": "chemistry_a",
+      "metrics": {
+        "mae": 4.038630040288302,
+        "rmse": 5.422323939143942,
+        "r2": 0.5401491523362614,
+        "spearman": 0.757508342602892,
+        "n": 30
+      }
+    },
+    "taste": {
+      "model": "pls",
+      "feature_set": "chemistry_a",
+      "metrics": {
+        "mae": 5.347495660222082,
+        "rmse": 6.500195992997765,
+        "r2": 0.6622303215438987,
+        "spearman": 0.8291434927697442,
+        "n": 30
+      }
+    },
+    "solubility": {
+      "model": "pls",
+      "feature_set": "chemistry_a",
+      "metrics": {
+        "mae": 2.7647084574860066,
+        "rmse": 3.5665225322790017,
+        "r2": 0.09996390849898162,
+        "spearman": 0.5230255839822024,
+        "n": 30
+      }
+    },
+    "overall_score": {
+      "model": "pls",
+      "feature_set": "chemistry_a",
+      "metrics": {
+        "mae": 3.3575332070740926,
+        "rmse": 4.153227923236482,
+        "r2": 0.6549730269317238,
+        "spearman": 0.8091212458286985,
+        "n": 30
+      }
+    }
+  },
+  "data_version": "1.0.0",
+  "random_state": 42
+}

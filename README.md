@@ -63,7 +63,7 @@ If the optional XGBoost or CatBoost package is unavailable, training records tha
 - `data/processed/`: row-level clean data, 30-row blend master, 597-row sensory observations and source manifest.
 - `artifacts/reports/`: audit reports, per-task metrics and `final_report.md`.
 - `artifacts/models/`: joblib estimators, metadata, feature order and metrics.
-- `artifacts/predictions/`: OOF predictions and per-sample errors.
+- `artifacts/predictions/`: OOF predictions, per-rating errors and selected-model `prediction_error_by_sample.csv`.
 - `artifacts/optimization/design_space_32.csv`: one row for every legal design point.
 - `artifacts/optimization/next_experiments.csv`: the two missing valid recipes, prioritized for physical measurement.
 - `artifacts/optimization/top_candidates.csv`: measured-first candidate ranking under Gate B and user constraints.
@@ -80,3 +80,5 @@ The legal points are enumerated from these weighing levels and the fixed 4.0 g t
 | Black tea | 0.5, 1.0, 1.5, 2.0, 2.5 g |
 
 Any blend outside those 32 points is `INVALID_DESIGN_POINT` and is not returned as a recommendation. The two missing points should be physically prepared and measured to bring the defined discrete design to 100% coverage.
+
+The underlying `RecipeSchema` and diversity selector accept a dynamic number of ingredient columns; the current four-tea levels and UI are the TeaBioSens data adapter in `configs/feature_schema.yaml`.

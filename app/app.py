@@ -128,6 +128,8 @@ with tab_predict:
         st.write(f"状态：`{result['design_status']}` · 证据：`{result['evidence_type']}`")
         if result["design_status"] == "OBSERVED":
             st.success(f"{result.get('sample_code')} 有实测结果。下表保留模型估计作诊断，已知配方页显示真实数据。")
+        if result.get("model_anomaly"):
+            st.error("模型异常标记：" + "; ".join(result.get("model_anomaly_reasons", [])))
         left, right = st.columns(2)
         left.markdown("**Recipe → Chemistry → Sensory（Path A）**")
         left.dataframe(pd.DataFrame({"预测": result["path_a_sensory"], "GPR spread": result["path_a_uncertainty"]}), use_container_width=True)
@@ -164,7 +166,12 @@ with tab_rank:
     if objective_options[objective_label] == "weighted_sensory":
         st.caption("以下权重由用户定义，不代表数据集 Overall score 的计算公式。")
         weights = {target: st.slider(target, 0.0, 1.0, DEFAULT_WEIGHTED_SENSORY[target], 0.05, key=f"weight_{target}") for target in DEFAULT_WEIGHTED_SENSORY}
-    reliable_chem = [target for target in CHEMISTRY_BASE if target in predictor.chemistry_metrics.get("by_target", {}) and predictor.chemistry_metrics["by_target"][target].get("selected_metrics", {}).get("mae", float("inf")) < predictor.chemistry_metrics["by_target"][target].get("baseline", {}).get("mae", -float("inf"))]
+    reliable_chem = [
+        target for target in CHEMISTRY_BASE
+        if target in predictor.chemistry_metrics.get("by_target", {})
+        and predictor.chemistry_metrics["by_target"][target].get("selected_metrics", {}).get("mae", float("inf")) < predictor.chemistry_metrics["by_target"][target].get("baseline", {}).get("mae", -float("inf"))
+        and predictor.chemistry_metrics["by_target"][target].get("selected_metrics", {}).get("rmse", float("inf")) < predictor.chemistry_metrics["by_target"][target].get("baseline", {}).get("rmse", -float("inf"))
+    ]
     chemistry_constraints = {}
     with st.expander("可选理化约束"):
         if not reliable_chem:
@@ -223,6 +230,8 @@ with tab_detail:
     st.write(display_recipe(detail["recipe_g"]))
     if detail["design_status"] == "UNOBSERVED_VALID":
         st.warning("该点尚无真实实验结果。模型估计仅用于安排验证实验。")
+    if detail.get("model_anomaly"):
+        st.error("模型异常标记：" + "; ".join(detail.get("model_anomaly_reasons", [])))
     st.markdown("**Path A / Path B 与不确定性**")
     sensory_table = pd.DataFrame({
         "Path A": detail["path_a_sensory"],
@@ -252,6 +261,13 @@ with tab_detail:
         st.dataframe(pd.DataFrame({"配方比例特征": RECIPE_FEATURES[:len(importances)], "模型重要性": importances, "解释": ["模型关联，不代表因果影响"] * len(importances)}), use_container_width=True, hide_index=True)
     else:
         st.caption(f"当前 Overall score 模型 `{selected_model_name}` 不提供稳定的局部系数/特征重要性摘要；可结合邻近实测配方和两条预测链查看。")
+    if selected_model_name != "ridge_a":
+        simple = predictor.direct["interpretable_estimators"]["overall_score"]
+        simple_model = simple.named_steps["model"]
+        coefficients = np.asarray(simple_model.coef_).reshape(-1)
+        feature_names = predictor.direct["interpretable_feature_order"]
+        st.caption("独立 Ridge 线性参照模型（标准化特征系数），用于简洁关联解释；不代表因果影响。")
+        st.dataframe(pd.DataFrame({"配方比例特征": feature_names[:len(coefficients)], "Ridge 系数": coefficients, "解释": ["模型关联，不代表因果影响"] * len(coefficients)}), use_container_width=True, hide_index=True)
     if detail["model_disagreement"] > 10 or detail["predicted_uncertainty"] > 5:
         st.warning("模型分歧或 GPR spread 较高，应优先安排实测验证。")
     st.warning(DISCLAIMER)

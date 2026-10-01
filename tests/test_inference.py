@@ -19,4 +19,4 @@ def test_same_saved_models_and_input_are_reproducible():
     assert a["design_status"] == "OBSERVED"
     assert a["path_b_sensory"] == b["path_b_sensory"]
     assert a["predicted_chemistry"] == b["predicted_chemistry"]
-
+    assert "overall_score" in predictor.direct["interpretable_estimators"]

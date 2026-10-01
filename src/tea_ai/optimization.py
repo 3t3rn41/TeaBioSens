@@ -73,6 +73,23 @@ def _constraint_value_satisfied(value, limits):
     return ("min" not in limits or value >= float(limits["min"])) and ("max" not in limits or value <= float(limits["max"]))
 
 
+def select_diverse_top_k(candidates: pd.DataFrame, recipe_columns, score_column: str = "ranking_score", top_k: int = 10, min_linf: float = 0.05) -> pd.DataFrame:
+    """Select a deterministic diverse Top-K over an arbitrary N-part recipe vector."""
+    ordered = candidates.sort_values([score_column, "objective_value"], ascending=[False, False], kind="stable")
+    chosen_indices = []
+    chosen_vectors = []
+    for index, candidate in ordered.iterrows():
+        vector = candidate[list(recipe_columns)].to_numpy(dtype=float)
+        if all(np.max(np.abs(vector - prior)) >= min_linf - 1e-12 for prior in chosen_vectors):
+            chosen_indices.append(index)
+            chosen_vectors.append(vector)
+            if len(chosen_indices) >= max(1, int(top_k)):
+                break
+    result = ordered.loc[chosen_indices].copy()
+    result.insert(0, "rank", np.arange(1, len(result) + 1))
+    return result
+
+
 def rank_design_space(
     predictor: TeaPredictor | None = None,
     objective: str = "maximize_overall",
@@ -154,7 +171,9 @@ def rank_design_space(
             "nearest_sample": nearest.get("sample_code"),
             "nearest_distance_g": nearest.get("distance_g_euclidean"),
             "within_user_constraints": constraint_ok,
-            "recommendation_eligible": bool(constraint_ok and (status == "OBSERVED" or ai_recommendation_enabled)),
+            "model_anomaly": bool(prediction.get("model_anomaly", False)) if status != "OBSERVED" else False,
+            "model_anomaly_reasons": prediction.get("model_anomaly_reasons", []) if status != "OBSERVED" else [],
+            "recommendation_eligible": bool(constraint_ok and (status == "OBSERVED" or (ai_recommendation_enabled and not prediction.get("model_anomaly", False)))),
             "ai_recommendation_gate": model_gate.get("status", "UNKNOWN"),
             "chemistry_constraints_experimental": bool(unavailable and allow_experimental_chemistry_constraints),
             "measured_sensory": measured_sensory,
@@ -174,18 +193,8 @@ def rank_design_space(
 
     table = pd.DataFrame(rows)
     table["eligible"] = table["recommendation_eligible"]
-    eligible = table[table["eligible"]].sort_values(["ranking_score", "objective_value"], ascending=[False, False], kind="stable")
-    selected = []
-    for _, candidate in eligible.iterrows():
-        vector = candidate[RECIPE_FEATURES].to_numpy(dtype=float)
-        if all(np.max(np.abs(vector - previous)) >= diversity_min_linf - 1e-12 for previous in selected):
-            selected.append(vector)
-            if len(selected) >= max(1, int(top_k)):
-                break
-    # Re-sort after applying the deterministic diversity rule; only selected rows get a Top-K rank.
-    chosen_set = {tuple(np.round(vector, 8)) for vector in selected}
-    top = table[table[RECIPE_FEATURES].apply(lambda row: tuple(np.round(row.to_numpy(dtype=float), 8)), axis=1).isin(chosen_set)].sort_values("ranking_score", ascending=False, kind="stable").copy()
-    top.insert(0, "rank", np.arange(1, len(top) + 1))
+    eligible = table[table["eligible"]]
+    top = select_diverse_top_k(eligible, RECIPE_FEATURES, top_k=top_k, min_linf=diversity_min_linf)
 
     missing = table[table["design_status"] == "UNOBSERVED_VALID"].sort_values("objective_uncertainty", ascending=False, kind="stable").copy()
     missing.insert(0, "experiment_priority", np.arange(1, len(missing) + 1))

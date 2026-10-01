@@ -15,14 +15,14 @@ CV: `LeaveOneOut by unique sample_code (n=30; within-design reconstruction)`. OO
 | `malic_acid_mg_g` | `gpr` | 0.3681 | 0.3664 | 0.4997 | 0.4978 |
 | `citric_acid_mg_g` | `pls` | 1.3620 | 1.4520 | 1.6440 | 1.7048 |
 | `ascorbic_acid_mg_g` | `ridge_b_no_intercept` | 2.1920 | 2.2047 | 2.3591 | 2.2974 |
-| `oxalic_acid_mg_g` | `ridge_a` / linear_A | 0.3808 | 0.3716 | 0.5054 | 0.5123 |
+| `oxalic_acid_mg_g` | `catboost` | 0.3636 | 0.3716 | 0.4880 | 0.5123 |
 | `galic_acid_mg_g` | `ridge_a` / linear_A | 0.0889 | 0.0959 | 0.1121 | 0.1227 |
 | `succinic_acid_mg_g` | `ridge_b_no_intercept` | 1.8810 | 1.9252 | 2.5392 | 2.5340 |
 | `l_theanine_mg_g` | `ridge_a` / linear_A | 0.2859 | 0.2840 | 0.3563 | 0.3550 |
 
 Reliability gate: **PASS**.
 
-7/15 base chemistry targets improved both OOF MAE and RMSE over the mean baseline.
+8/15 base chemistry targets improved both OOF MAE and RMSE over the mean baseline.
 
 Models are compared on grouped out-of-fold predictions. Fold-level R² is not used; R² is calculated on the combined OOF vector.
 

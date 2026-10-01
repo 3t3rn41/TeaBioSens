@@ -1,5 +1,25 @@
 recipe_features: [green_pct, white_pct, oolong_pct, black_pct]
 linear_recipe_features: [green_pct, white_pct, oolong_pct]
+recipe_design:
+  total_mass: 4.0
+  mass_unit: g
+  ingredients:
+    - key: green
+      mass_column: green_g
+      proportion_column: green_pct
+      levels: [0.5, 1.0, 1.5, 2.0]
+    - key: white
+      mass_column: white_g
+      proportion_column: white_pct
+      levels: [0.5, 1.0, 1.5, 2.0]
+    - key: oolong
+      mass_column: oolong_g
+      proportion_column: oolong_pct
+      levels: [0.5, 1.0, 1.5, 2.0]
+    - key: black
+      mass_column: black_g
+      proportion_column: black_pct
+      levels: [0.5, 1.0, 1.5, 2.0, 2.5]
 chemistry_base_targets:
   - protein_ug_g
   - tss_ug_g
@@ -18,4 +38,3 @@ chemistry_base_targets:
   - l_theanine_mg_g
 chemistry_ratios: [tp_theanine, caf_tp, protein_tp, tf_tr]
 sensory_targets: [appearance, infusion_color, aroma, taste, solubility, overall_score]
-

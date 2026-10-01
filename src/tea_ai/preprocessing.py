@@ -45,6 +45,15 @@ def build_datasets(raw: pd.DataFrame, source_path: str | Path, output_dir: str |
 
     observation_columns = ["sample_code", *RECIPE_FEATURES, *CHEMISTRY_ALL, *SENSORY_TARGETS]
     sensory_observations = clean[observation_columns].copy()
+    if len(master) != 30 or not master["sample_code"].is_unique:
+        raise ValueError(f"M1 contract failed: expected 30 unique blend rows, got {len(master)}")
+    if len(sensory_observations) != 597:
+        raise ValueError(f"M1 contract failed: expected 597 rating rows, got {len(sensory_observations)}")
+    if not np.allclose(master[RECIPE_FEATURES].sum(axis=1), 1.0, atol=1e-10):
+        raise ValueError("M1 contract failed: recipe proportions do not sum to 1")
+    for ratio in RATIO_FORMULAS:
+        if not np.allclose(master[ratio], master[f"ratio_recomputed_{ratio}"], rtol=1e-6, atol=1e-8):
+            raise ValueError(f"M1 contract failed: derived ratio does not match formula: {ratio}")
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     paths = {

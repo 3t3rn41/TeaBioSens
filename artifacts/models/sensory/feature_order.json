@@ -1,0 +1,24 @@
+{
+  "features": [
+    "protein_ug_g",
+    "tss_ug_g",
+    "tp_mggae_g",
+    "caffeine_pct",
+    "catechin_pct",
+    "tf_pct",
+    "tr_pct",
+    "ph",
+    "malic_acid_mg_g",
+    "citric_acid_mg_g",
+    "ascorbic_acid_mg_g",
+    "oxalic_acid_mg_g",
+    "galic_acid_mg_g",
+    "succinic_acid_mg_g",
+    "l_theanine_mg_g",
+    "tp_theanine",
+    "caf_tp",
+    "protein_tp",
+    "tf_tr"
+  ],
+  "random_state": 42
+}

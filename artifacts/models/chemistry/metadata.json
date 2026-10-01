@@ -35,7 +35,7 @@
     "malic_acid_mg_g": "gpr",
     "citric_acid_mg_g": "pls",
     "ascorbic_acid_mg_g": "ridge_b_no_intercept",
-    "oxalic_acid_mg_g": "ridge_a",
+    "oxalic_acid_mg_g": "catboost",
     "galic_acid_mg_g": "ridge_a",
     "succinic_acid_mg_g": "ridge_b_no_intercept",
     "l_theanine_mg_g": "ridge_a"

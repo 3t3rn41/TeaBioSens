@@ -2,30 +2,22 @@
 
 from __future__ import annotations
 
-from itertools import product
 from typing import Iterable
 
 import numpy as np
 import pandas as pd
 
 from .constants import RECIPE_FEATURES
+from .schema import TEABIOSENS_RECIPE_SCHEMA
 
-GREEN_LEVELS = (0.5, 1.0, 1.5, 2.0)
-WHITE_LEVELS = (0.5, 1.0, 1.5, 2.0)
-OOLONG_LEVELS = (0.5, 1.0, 1.5, 2.0)
-BLACK_LEVELS = (0.5, 1.0, 1.5, 2.0, 2.5)
-TOTAL_MASS_G = 4.0
-DESIGN_COLUMNS_G = ["green_g", "white_g", "oolong_g", "black_g"]
+GREEN_LEVELS, WHITE_LEVELS, OOLONG_LEVELS, BLACK_LEVELS = TEABIOSENS_RECIPE_SCHEMA.allowed_mass_levels
+TOTAL_MASS_G = TEABIOSENS_RECIPE_SCHEMA.total_mass
+DESIGN_COLUMNS_G = list(TEABIOSENS_RECIPE_SCHEMA.mass_columns)
 
 
 def enumerate_valid_design_points() -> set[tuple[float, float, float, float]]:
     """Enumerate combinations from the documented weighing levels and fixed total."""
-    levels = (GREEN_LEVELS, WHITE_LEVELS, OOLONG_LEVELS, BLACK_LEVELS)
-    return {
-        tuple(float(value) for value in point)
-        for point in product(*levels)
-        if np.isclose(sum(point), TOTAL_MASS_G, atol=1e-9)
-    }
+    return TEABIOSENS_RECIPE_SCHEMA.enumerate_valid_points()
 
 
 def extract_observed_recipe_points(frame: pd.DataFrame) -> set[tuple[float, float, float, float]]:
@@ -35,11 +27,11 @@ def extract_observed_recipe_points(frame: pd.DataFrame) -> set[tuple[float, floa
 
 def classify_design_point(recipe_g: Iterable[float], observed_points: set[tuple[float, ...]], atol: float = 1e-8) -> str:
     point = np.asarray(list(recipe_g), dtype=float)
-    if point.shape != (4,) or not np.isfinite(point).all():
+    if point.shape != (TEABIOSENS_RECIPE_SCHEMA.n_ingredients,) or not np.isfinite(point).all():
         return "INVALID_DESIGN_POINT"
     if not np.isclose(point.sum(), TOTAL_MASS_G, atol=atol):
         return "INVALID_DESIGN_POINT"
-    if not any(np.allclose(point, known, atol=atol, rtol=0) for known in enumerate_valid_design_points()):
+    if not TEABIOSENS_RECIPE_SCHEMA.in_allowed_design(point, atol=atol):
         return "INVALID_DESIGN_POINT"
     if any(np.allclose(point, known, atol=atol, rtol=0) for known in observed_points):
         return "OBSERVED"
@@ -74,7 +66,7 @@ class RecipeDesignSpace:
         return classify_design_point(recipe_g, self.observed_points, atol=atol)
 
     def nearest(self, recipe_g, k: int = 3) -> list[dict]:
-        point = np.asarray(recipe_g, dtype=float).reshape(1, 4)
+        point = np.asarray(recipe_g, dtype=float).reshape(1, TEABIOSENS_RECIPE_SCHEMA.n_ingredients)
         distances = np.linalg.norm(self.observed_matrix_g - point, axis=1)
         order = np.argsort(distances, kind="stable")[: max(0, min(k, len(distances)))]
         result = []
@@ -95,4 +87,3 @@ class RecipeDesignSpace:
             "coverage": self.coverage,
             "unobserved_points_g": [list(point) for point in sorted(self.missing_points)],
         }
-

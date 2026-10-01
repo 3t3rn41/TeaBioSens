@@ -1,0 +1,51 @@
+{
+  "valid_point_count": 32,
+  "observed_point_count": 30,
+  "unobserved_valid_count": 2,
+  "coverage": 0.9375,
+  "unobserved_points_g": [
+    [
+      0.5,
+      1.0,
+      1.5,
+      1.0
+    ],
+    [
+      0.5,
+      1.5,
+      0.5,
+      1.5
+    ]
+  ],
+  "objective": "maximize_overall",
+  "eligible_count": 32,
+  "top_k_returned": 10,
+  "risk_lambda": 1.0,
+  "disagreement_gamma": 1.0,
+  "diversity_min_linf": 0.05,
+  "reliable_chemistry_constraints": [
+    "caffeine_pct",
+    "catechin_pct",
+    "citric_acid_mg_g",
+    "galic_acid_mg_g",
+    "oxalic_acid_mg_g",
+    "ph",
+    "tf_pct",
+    "tr_pct"
+  ],
+  "ai_recommendation_enabled": true,
+  "recipe_sensory_gate": {
+    "status": "PASS",
+    "primary_target": "overall_score",
+    "improved_targets": [
+      "appearance",
+      "infusion_color",
+      "aroma",
+      "taste",
+      "solubility",
+      "overall_score"
+    ],
+    "summary": "Overall-score OOF MAE/RMSE both improve over the mean baseline; 6/6 targets improved both metrics."
+  },
+  "scientific_note": "within-design reconstruction only; GPR spread and model disagreement are not calibrated probabilities."
+}

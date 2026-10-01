@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import platform
 import subprocess
 import uuid
 import warnings
@@ -74,9 +75,17 @@ def _write_run_metadata(task: str, input_path: Path, selected_models: dict, metr
         commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, text=True, capture_output=True, check=True).stdout.strip()
     except Exception:
         commit = None
+    environment = {"python": platform.python_version()}
+    for module_name in ["numpy", "pandas", "sklearn", "scipy", "xgboost", "catboost"]:
+        try:
+            module = __import__(module_name)
+            environment[module_name] = getattr(module, "__version__", "installed")
+        except ImportError:
+            environment[module_name] = "not_installed"
     write_json(run_dir / "run.json", {
         "run_id": run_id, "timestamp_utc": utc_now(), "git_commit_if_available": commit,
         "config": {"random_state": RANDOM_STATE, "data_version": DATA_VERSION},
+        "environment": environment,
         "input_sha256": sha256_file(input_path), "model_name": selected_models,
         "cv_method": cv_method, "metrics": metrics,
     })
@@ -337,6 +346,7 @@ def train_direct_recipe_sensory(master_path: str | Path | None = None) -> dict:
     all_records = []
     best_by_target = {}
     selected_estimators = {}
+    interpretable_estimators = {}
     uncertainty_estimators = {}
     for target in SENSORY_TARGETS:
         y = frame[f"{target}_mean"].to_numpy(dtype=float)
@@ -356,27 +366,42 @@ def train_direct_recipe_sensory(master_path: str | Path | None = None) -> dict:
                 predictions[name][test_idx] = _array_prediction(estimator, X.iloc[test_idx])
         metrics_by_name = {"mean": regression_metrics(y, mean_pred), "nearest_recipe": regression_metrics(y, nearest_pred)}
         metrics_by_name.update({name: regression_metrics(y, pred) for name, pred in predictions.items()})
-        selected_name = min(model_specs, key=lambda name: (metrics_by_name[name]["mae"], metrics_by_name[name]["rmse"]))
+        passing_models = [
+            name for name in model_specs
+            if metrics_by_name[name]["mae"] < metrics_by_name["mean"]["mae"]
+            and metrics_by_name[name]["rmse"] < metrics_by_name["mean"]["rmse"]
+        ]
+        selection_pool = passing_models if target == "overall_score" and passing_models else list(model_specs)
+        selected_name = min(selection_pool, key=lambda name: (metrics_by_name[name]["mae"], metrics_by_name[name]["rmse"]))
         selected_family, X_selected = model_specs[selected_name]
         if selected_name == "ridge_a":
             model = candidate_estimators(3)["ridge"].fit(X_selected, y)
         else:
             model = candidate_estimators(X_selected.shape[1])[selected_family].fit(X_selected, y)
         selected_estimators[target] = model
+        interpretable_estimators[target] = candidate_estimators(X_linear.shape[1])["ridge"].fit(X_linear, y)
         uncertainty_estimators[target] = candidate_estimators(4)["gpr"].fit(X_all, y)
         best_by_target[target] = {"selected": {"model": selected_name, "feature_set": "linear_A" if selected_name == "ridge_a" else None, "metrics": metrics_by_name[selected_name]}, "baseline": metrics_by_name["mean"], "nearest_recipe": metrics_by_name["nearest_recipe"], "all_models": metrics_by_name}
         for model_name, pred in {"mean": mean_pred, "nearest_recipe": nearest_pred, **predictions}.items():
             for index, sample_code in enumerate(codes):
                 all_records.append({"sample_code": sample_code, "target": target, "model": model_name, "y_true": y[index], "y_pred": pred[index], "abs_error": abs(y[index] - pred[index]), "signed_error": pred[index] - y[index]})
-    gate_targets = [name for name, info in best_by_target.items() if info["selected"]["metrics"]["mae"] < info["baseline"]["mae"] and info["selected"]["metrics"]["rmse"] < info["baseline"]["rmse"]]
+    gate_targets = [
+        target for target, info in best_by_target.items()
+        if any(
+            model != "mean" and model != "nearest_recipe"
+            and scores["mae"] < info["baseline"]["mae"]
+            and scores["rmse"] < info["baseline"]["rmse"]
+            for model, scores in info["all_models"].items()
+        )
+    ]
     overall_improved = "overall_score" in gate_targets
     gate = {"status": "PASS" if overall_improved else "FAIL", "primary_target": "overall_score", "improved_targets": gate_targets, "summary": f"Overall-score OOF MAE/RMSE {'both improve' if overall_improved else 'do not both improve'} over the mean baseline; {len(gate_targets)}/{len(SENSORY_TARGETS)} targets improved both metrics."}
     metrics = {"task": "recipe_to_sensory", "cv_method": "LeaveOneOut by unique sample_code (n=30; within-design reconstruction)", "features": RECIPE_FEATURES, "targets": SENSORY_TARGETS, "by_target": {k: {"selected_model": v["selected"]["model"], "selected_metrics": v["selected"]["metrics"], "baseline": v["baseline"], "nearest_recipe": v["nearest_recipe"], "models": v["all_models"]} for k, v in best_by_target.items()}, "gate": gate, "optional_models_available": [name for name in ("xgboost", "catboost") if name in model_specs]}
     model_dir = root / "artifacts/models/direct_recipe"
     model_dir.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"estimators": selected_estimators, "uncertainty_estimators": uncertainty_estimators, "feature_order": RECIPE_FEATURES, "feature_order_by_target": {target: list(model_specs[best_by_target[target]["selected"]["model"]][1].columns) for target in SENSORY_TARGETS}, "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}}, model_dir / "model.joblib")
+    joblib.dump({"estimators": selected_estimators, "uncertainty_estimators": uncertainty_estimators, "interpretable_estimators": interpretable_estimators, "feature_order": RECIPE_FEATURES, "feature_order_by_target": {target: list(model_specs[best_by_target[target]["selected"]["model"]][1].columns) for target in SENSORY_TARGETS}, "interpretable_feature_order": LINEAR_RECIPE_FEATURES, "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}}, model_dir / "model.joblib")
     _write_feature_order(model_dir, RECIPE_FEATURES)
-    write_json(model_dir / "metadata.json", {"task": metrics["task"], "features": RECIPE_FEATURES, "targets": SENSORY_TARGETS, "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}, "data_version": DATA_VERSION, "random_state": RANDOM_STATE})
+    write_json(model_dir / "metadata.json", {"task": metrics["task"], "features": RECIPE_FEATURES, "targets": SENSORY_TARGETS, "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}, "interpretable_model": "scaled Ridge on representation A", "interpretable_feature_order": LINEAR_RECIPE_FEATURES, "uncertainty_model": "GaussianProcessRegressor", "data_version": DATA_VERSION, "random_state": RANDOM_STATE})
     write_json(model_dir / "metrics.json", metrics)
     pd.DataFrame(all_records).to_csv(root / "artifacts/predictions/recipe_sensory_oof.csv", index=False)
     write_json(root / "artifacts/reports/recipe_sensory_metrics.json", metrics)

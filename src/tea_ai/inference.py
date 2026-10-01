@@ -66,7 +66,8 @@ class TeaPredictor:
             gp = self.chemistry["uncertainty_estimators"][target]
             _, std = predict_mean_std(gp, recipe_frame)
             chemistry_std[target] = float(std[0])
-        chemistry_mean.update(recompute_ratios(chemistry_mean))
+        ratios = recompute_ratios(chemistry_mean)
+        chemistry_mean.update({key: value if np.isfinite(value) else None for key, value in ratios.items()})
         chemistry_frame = self._single_row([chemistry_mean.get(col, np.nan) for col in CHEMISTRY_ALL], CHEMISTRY_ALL)
         chemistry_frame = chemistry_frame.replace([np.inf, -np.inf], np.nan).fillna(0.0)
 
@@ -90,6 +91,16 @@ class TeaPredictor:
             _, std = predict_mean_std(gp, recipe_frame)
             path_b_std[target] = float(std[0])
         disagreement = {target: abs(path_a[target] - path_b[target]) for target in SENSORY_TARGETS}
+        if not all(np.isfinite(value) for value in [*chemistry_mean.values(), *chemistry_std.values(), *path_a.values(), *path_a_std.values(), *path_b.values(), *path_b_std.values(), *disagreement.values()] if value is not None):
+            raise FloatingPointError("Model inference returned a non-finite prediction or uncertainty")
+        anomaly_reasons = []
+        negative_chemistry = [name for name in CHEMISTRY_BASE if chemistry_mean[name] < 0]
+        if negative_chemistry:
+            anomaly_reasons.append(f"negative predicted chemistry: {negative_chemistry}")
+        for path_name, scores in [("Path A", path_a), ("Path B", path_b)]:
+            outside = [name for name, value in scores.items() if value < 0 or value > 100]
+            if outside:
+                anomaly_reasons.append(f"{path_name} sensory predictions outside [0, 100]: {outside}")
         base.update({
             "predicted_chemistry": chemistry_mean,
             "chemistry_uncertainty": chemistry_std,
@@ -100,6 +111,8 @@ class TeaPredictor:
             "model_disagreement_by_target": disagreement,
             "model_disagreement": disagreement["overall_score"],
             "predicted_uncertainty": path_b_std["overall_score"],
+            "model_anomaly": bool(anomaly_reasons),
+            "model_anomaly_reasons": anomaly_reasons,
         })
         observed = self.master[
             np.all(np.isclose(self.master[["green_g", "white_g", "oolong_g", "black_g"]].to_numpy(), recipe_g, atol=1e-8, rtol=0), axis=1)

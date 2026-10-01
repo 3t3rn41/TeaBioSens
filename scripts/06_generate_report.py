@@ -29,9 +29,28 @@ def append_comparison(lines, title, data, baseline_names=("mean", "nearest_recip
         baseline_row = {"mean": baseline}
         if "nearest_recipe" in info:
             baseline_row["nearest_recipe"] = info["nearest_recipe"]
+        if "nearest_chemistry" in info:
+            baseline_row["nearest_chemistry"] = info["nearest_chemistry"]
         for name, scores in {**baseline_row, **models}.items():
             lines.append(f"| `{target}` | `{name}` | {metric(scores, 'mae')} | {metric(scores, 'rmse')} | {metric(scores, 'r2')} | {metric(scores, 'spearman')} |")
     lines.append("")
+
+
+def selected_oof_errors(metrics, predictions_path, task):
+    rows = pd.read_csv(predictions_path)
+    selected_rows = []
+    for target, info in metrics["by_target"].items():
+        chosen = info.get("selected_model")
+        subset = rows[rows["target"] == target]
+        if task == "chemistry_to_sensory":
+            feature_set, model = chosen.split(":", 1)
+            subset = subset[(subset["feature_set"] == feature_set) & (subset["model"] == model)]
+        else:
+            subset = subset[subset["model"] == chosen]
+        for row in subset.to_dict("records"):
+            row["task"] = task
+            selected_rows.append(row)
+    return selected_rows
 
 
 def main():
@@ -42,6 +61,12 @@ def main():
     opt = load_json(ROOT / "artifacts/optimization/optimization_summary.json")
     top = pd.read_csv(ROOT / "artifacts/optimization/top_candidates.csv")
     next_exp = pd.read_csv(ROOT / "artifacts/optimization/next_experiments.csv")
+    combined_oof = []
+    combined_oof.extend(selected_oof_errors(chem, ROOT / "artifacts/predictions/recipe_chemistry_oof.csv", "recipe_to_chemistry"))
+    combined_oof.extend(selected_oof_errors(sens, ROOT / "artifacts/predictions/chemistry_sensory_oof.csv", "chemistry_to_sensory"))
+    combined_oof.extend(selected_oof_errors(direct, ROOT / "artifacts/predictions/recipe_sensory_oof.csv", "recipe_to_sensory"))
+    (ROOT / "artifacts/predictions").mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(combined_oof).to_csv(ROOT / "artifacts/predictions/prediction_error_by_sample.csv", index=False)
     coverage = audit["design_space"]
     lines = [
         "# TeaBioSens 茶叶智能拼配 V0.4 原型报告", "",
@@ -113,7 +138,7 @@ def main():
         "6. 厂家下一步优先提供两个缺失格点的完整理化和感官结果，随后补充原料批次、工艺参数、标准化感官评价、成本、库存和稳定性记录。", "",
         "## 9. 交付物索引", "",
         "- 数据：`data/processed/`；审计：`artifacts/reports/data_audit.*`。",
-        "- OOF 预测：`artifacts/predictions/`；模型与字段顺序：`artifacts/models/`。",
+        "- OOF 预测：`artifacts/predictions/`；综合已选模型误差表：`prediction_error_by_sample.csv`；模型与字段顺序：`artifacts/models/`。",
         "- 32 点全表、下一次实验、Top 候选：`artifacts/optimization/`。",
         "- Streamlit 页面：`app/app.py`；启动：`streamlit run app/app.py`。",
         "- 完整复现：`python scripts/07_run_full_pipeline.py`；测试：`pytest -q`。", "",
@@ -127,4 +152,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

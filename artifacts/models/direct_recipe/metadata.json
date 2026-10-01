@@ -1,0 +1,34 @@
+{
+  "task": "recipe_to_sensory",
+  "features": [
+    "green_pct",
+    "white_pct",
+    "oolong_pct",
+    "black_pct"
+  ],
+  "targets": [
+    "appearance",
+    "infusion_color",
+    "aroma",
+    "taste",
+    "solubility",
+    "overall_score"
+  ],
+  "selected_models": {
+    "appearance": "catboost",
+    "infusion_color": "pls",
+    "aroma": "catboost",
+    "taste": "ridge_a",
+    "solubility": "random_forest",
+    "overall_score": "pls"
+  },
+  "interpretable_model": "scaled Ridge on representation A",
+  "interpretable_feature_order": [
+    "green_pct",
+    "white_pct",
+    "oolong_pct"
+  ],
+  "uncertainty_model": "GaussianProcessRegressor",
+  "data_version": "1.0.0",
+  "random_state": 42
+}

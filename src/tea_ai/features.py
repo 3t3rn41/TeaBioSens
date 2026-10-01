@@ -8,31 +8,34 @@ import numpy as np
 import pandas as pd
 
 from .constants import RECIPE_FEATURES
+from .schema import TEABIOSENS_RECIPE_SCHEMA
+
+
+def validate_composition(recipe: Mapping[str, float] | list[float] | tuple[float, ...], feature_order, total: float = 1.0, atol: float = 1e-6) -> np.ndarray:
+    """Validate an N-part composition when its ordered feature schema is supplied."""
+    if isinstance(recipe, Mapping):
+        values = np.asarray([recipe[name] for name in feature_order], dtype=float)
+    else:
+        values = np.asarray(recipe, dtype=float)
+    if values.shape != (len(feature_order),) or not np.isfinite(values).all():
+        raise ValueError(f"Composition must contain {len(feature_order)} finite values")
+    if (values < -atol).any() or not np.isclose(values.sum(), total, atol=atol):
+        raise ValueError(f"Composition values must be non-negative and sum to {total:g}")
+    return np.clip(values, 0, total)
 
 
 def validate_recipe(recipe: Mapping[str, float] | list[float] | tuple[float, ...], atol: float = 1e-6) -> np.ndarray:
-    if isinstance(recipe, Mapping):
-        values = np.asarray([recipe[name] for name in RECIPE_FEATURES], dtype=float)
-    else:
-        values = np.asarray(recipe, dtype=float)
-    if values.shape != (4,):
-        raise ValueError("Recipe must contain four proportions in green, white, oolong, black order")
-    if not np.isfinite(values).all():
-        raise ValueError("Recipe proportions must be finite")
-    if (values < -atol).any():
-        raise ValueError("Recipe proportions must be non-negative")
-    if not np.isclose(values.sum(), 1.0, atol=atol):
-        raise ValueError(f"Recipe proportions must sum to 1.0; got {values.sum():.10g}")
-    return np.clip(values, 0, 1)
+    return validate_composition(recipe, RECIPE_FEATURES, total=1.0, atol=atol)
 
 
-def recipe_frame(recipes: np.ndarray) -> pd.DataFrame:
+def recipe_frame(recipes: np.ndarray, feature_order=None) -> pd.DataFrame:
     matrix = np.asarray(recipes, dtype=float)
     if matrix.ndim == 1:
         matrix = matrix.reshape(1, -1)
-    if matrix.shape[1] != len(RECIPE_FEATURES):
-        raise ValueError("Expected four recipe features")
-    return pd.DataFrame(matrix, columns=RECIPE_FEATURES)
+    columns = list(feature_order or RECIPE_FEATURES)
+    if matrix.shape[1] != len(columns):
+        raise ValueError(f"Expected {len(columns)} recipe features")
+    return pd.DataFrame(matrix, columns=columns)
 
 
 def recompute_ratios(chemistry: Mapping[str, float], epsilon: float = 1e-12) -> dict[str, float]:
@@ -47,4 +50,3 @@ def recompute_ratios(chemistry: Mapping[str, float], epsilon: float = 1e-12) -> 
         divisor = float(chemistry[denominator])
         ratios[ratio] = float(chemistry[numerator]) / divisor if abs(divisor) > epsilon else float("nan")
     return ratios
-
