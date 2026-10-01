@@ -19,7 +19,7 @@ from sklearn.exceptions import ConvergenceWarning
 from ..constants import (
     CHEMISTRY_ALL, CHEMISTRY_BASE, CHEMISTRY_RATIOS, DATA_VERSION,
     LINEAR_RECIPE_FEATURES, RANDOM_STATE, RECIPE_FEATURES, RATIO_FORMULAS,
-    SENSORY_TARGETS,
+    MODEL_SENSORY_TARGETS,
 )
 from ..cv import leave_one_group_out, leave_one_out
 from ..io import project_root, sha256_file, utc_now, write_json
@@ -251,7 +251,7 @@ def train_chemistry_sensory(observations_path: str | Path | None = None, master_
     selected_estimators = {}
     uncertainty_estimators = {}
     rating_errors = []
-    for target in SENSORY_TARGETS:
+    for target in MODEL_SENSORY_TARGETS:
         y_group = means.loc[codes, f"{target}_mean"].to_numpy(dtype=float)
         y_rating = obs[target].to_numpy(dtype=float)
         by_model = {f"{feature_set}:{family}": np.full(len(codes), np.nan) for feature_set, family in model_variants}
@@ -322,19 +322,19 @@ def train_chemistry_sensory(observations_path: str | Path | None = None, master_
             "models": model_metrics,
         }
 
-    gate_targets = [name for name in SENSORY_TARGETS if selected[name]["metrics"]["mae"] < per_target[name]["baseline"]["mae"] and selected[name]["metrics"]["rmse"] < per_target[name]["baseline"]["rmse"]]
-    gate = {"status": "PASS" if gate_targets else "FAIL", "improved_targets": gate_targets, "summary": f"{len(gate_targets)}/{len(SENSORY_TARGETS)} blend-mean targets improved both OOF MAE and RMSE over the mean baseline."}
-    metrics = {"task": "chemistry_to_sensory", "cv_method": "LeaveOneGroupOut by sample_code (30 independent blend means; within-design reconstruction); models also fit on 597 ratings", "rating_rows": int(len(obs)), "independent_blends": int(len(codes)), "feature_sets": {key: list(value.columns) for key, value in X_by_group.items()}, "by_target": per_target, "gate": gate, "optional_models_available": sorted({family for _, family in model_variants} & {"xgboost", "catboost"})}
+    gate_targets = [name for name in MODEL_SENSORY_TARGETS if selected[name]["metrics"]["mae"] < per_target[name]["baseline"]["mae"] and selected[name]["metrics"]["rmse"] < per_target[name]["baseline"]["rmse"]]
+    gate = {"status": "PASS" if gate_targets else "FAIL", "improved_targets": gate_targets, "summary": f"{len(gate_targets)}/{len(MODEL_SENSORY_TARGETS)} modeled blend-mean targets improved both OOF MAE and RMSE over the mean baseline."}
+    metrics = {"task": "chemistry_to_sensory", "cv_method": "LeaveOneGroupOut by sample_code (30 independent blend means; within-design reconstruction); models also fit on 597 ratings", "rating_rows": int(len(obs)), "independent_blends": int(len(codes)), "feature_sets": {key: list(value.columns) for key, value in X_by_group.items()}, "targets": MODEL_SENSORY_TARGETS, "excluded_descriptive_targets": ["solubility"], "by_target": per_target, "gate": gate, "optional_models_available": sorted({family for _, family in model_variants} & {"xgboost", "catboost"})}
     model_dir = root / "artifacts/models/sensory"
     model_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump({"estimators": selected_estimators, "uncertainty_estimators": uncertainty_estimators, "features_by_target": {k: X_by_group[v["feature_set"]].columns.tolist() for k, v in selected.items()}, "selected_models": selected}, model_dir / "model.joblib")
     _write_feature_order(model_dir, CHEMISTRY_ALL)
-    write_json(model_dir / "metadata.json", {"task": metrics["task"], "targets": SENSORY_TARGETS, "selected_models": selected, "data_version": DATA_VERSION, "random_state": RANDOM_STATE})
+    write_json(model_dir / "metadata.json", {"task": metrics["task"], "targets": MODEL_SENSORY_TARGETS, "excluded_descriptive_targets": ["solubility"], "selected_models": selected, "data_version": DATA_VERSION, "random_state": RANDOM_STATE})
     write_json(model_dir / "metrics.json", metrics)
     pd.DataFrame(all_records).to_csv(root / "artifacts/predictions/chemistry_sensory_oof.csv", index=False)
     pd.DataFrame(rating_errors).to_csv(root / "artifacts/predictions/chemistry_sensory_rating_errors.csv", index=False)
     write_json(root / "artifacts/reports/chemistry_sensory_metrics.json", metrics)
-    (root / "artifacts/reports/chemistry_sensory_report.md").write_text(_training_report_text("sensory", metrics, {k: {"selected": selected[k], "baseline": per_target[k]["baseline"]} for k in SENSORY_TARGETS}, gate), encoding="utf-8")
+    (root / "artifacts/reports/chemistry_sensory_report.md").write_text(_training_report_text("sensory", metrics, {k: {"selected": selected[k], "baseline": per_target[k]["baseline"]} for k in MODEL_SENSORY_TARGETS}, gate), encoding="utf-8")
     _write_run_metadata("chemistry_sensory", observations_path, {k: v["model"] for k, v in selected.items()}, metrics, metrics["cv_method"])
     return metrics
 
@@ -356,7 +356,7 @@ def train_direct_recipe_sensory(master_path: str | Path | None = None) -> dict:
     selected_estimators = {}
     interpretable_estimators = {}
     uncertainty_estimators = {}
-    for target in SENSORY_TARGETS:
+    for target in MODEL_SENSORY_TARGETS:
         y = frame[f"{target}_mean"].to_numpy(dtype=float)
         predictions = {name: np.full(len(frame), np.nan) for name in model_specs}
         mean_pred = np.full(len(frame), np.nan)
@@ -403,13 +403,13 @@ def train_direct_recipe_sensory(master_path: str | Path | None = None) -> dict:
         )
     ]
     overall_improved = "overall_score" in gate_targets
-    gate = {"status": "PASS" if overall_improved else "FAIL", "primary_target": "overall_score", "improved_targets": gate_targets, "summary": f"Overall-score OOF MAE/RMSE {'both improve' if overall_improved else 'do not both improve'} over the mean baseline; {len(gate_targets)}/{len(SENSORY_TARGETS)} targets improved both metrics."}
-    metrics = {"task": "recipe_to_sensory", "cv_method": "LeaveOneOut by unique sample_code (n=30; within-design reconstruction)", "features": RECIPE_FEATURES, "targets": SENSORY_TARGETS, "by_target": {k: {"selected_model": v["selected"]["model"], "selected_metrics": v["selected"]["metrics"], "baseline": v["baseline"], "nearest_recipe": v["nearest_recipe"], "models": v["all_models"]} for k, v in best_by_target.items()}, "gate": gate, "optional_models_available": [name for name in ("xgboost", "catboost") if name in model_specs]}
+    gate = {"status": "PASS" if overall_improved else "FAIL", "primary_target": "overall_score", "improved_targets": gate_targets, "summary": f"Overall-score OOF MAE/RMSE {'both improve' if overall_improved else 'do not both improve'} over the mean baseline; {len(gate_targets)}/{len(MODEL_SENSORY_TARGETS)} modeled targets improved both metrics."}
+    metrics = {"task": "recipe_to_sensory", "cv_method": "LeaveOneOut by unique sample_code (n=30; within-design reconstruction)", "features": RECIPE_FEATURES, "targets": MODEL_SENSORY_TARGETS, "excluded_descriptive_targets": ["solubility"], "by_target": {k: {"selected_model": v["selected"]["model"], "selected_metrics": v["selected"]["metrics"], "baseline": v["baseline"], "nearest_recipe": v["nearest_recipe"], "models": v["all_models"]} for k, v in best_by_target.items()}, "gate": gate, "optional_models_available": [name for name in ("xgboost", "catboost") if name in model_specs]}
     model_dir = root / "artifacts/models/direct_recipe"
     model_dir.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"estimators": selected_estimators, "uncertainty_estimators": uncertainty_estimators, "interpretable_estimators": interpretable_estimators, "feature_order": RECIPE_FEATURES, "feature_order_by_target": {target: list(model_specs[best_by_target[target]["selected"]["model"]][1].columns) for target in SENSORY_TARGETS}, "interpretable_feature_order": LINEAR_RECIPE_FEATURES, "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}}, model_dir / "model.joblib")
+    joblib.dump({"estimators": selected_estimators, "uncertainty_estimators": uncertainty_estimators, "interpretable_estimators": interpretable_estimators, "feature_order": RECIPE_FEATURES, "feature_order_by_target": {target: list(model_specs[best_by_target[target]["selected"]["model"]][1].columns) for target in MODEL_SENSORY_TARGETS}, "interpretable_feature_order": LINEAR_RECIPE_FEATURES, "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}}, model_dir / "model.joblib")
     _write_feature_order(model_dir, RECIPE_FEATURES)
-    write_json(model_dir / "metadata.json", {"task": metrics["task"], "features": RECIPE_FEATURES, "targets": SENSORY_TARGETS, "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}, "interpretable_model": "scaled Ridge on representation A", "interpretable_feature_order": LINEAR_RECIPE_FEATURES, "uncertainty_model": "GaussianProcessRegressor", "data_version": DATA_VERSION, "random_state": RANDOM_STATE})
+    write_json(model_dir / "metadata.json", {"task": metrics["task"], "features": RECIPE_FEATURES, "targets": MODEL_SENSORY_TARGETS, "excluded_descriptive_targets": ["solubility"], "selected_models": {k: v["selected"]["model"] for k, v in best_by_target.items()}, "interpretable_model": "scaled Ridge on representation A", "interpretable_feature_order": LINEAR_RECIPE_FEATURES, "uncertainty_model": "GaussianProcessRegressor", "data_version": DATA_VERSION, "random_state": RANDOM_STATE})
     write_json(model_dir / "metrics.json", metrics)
     pd.DataFrame(all_records).to_csv(root / "artifacts/predictions/recipe_sensory_oof.csv", index=False)
     write_json(root / "artifacts/reports/recipe_sensory_metrics.json", metrics)

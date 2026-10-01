@@ -1,0 +1,71 @@
+{
+  "test": "Mantel Pearson correlation with joint row-permutation null",
+  "n_independent_recipes": 30,
+  "permutations": 4999,
+  "seed": 42,
+  "permutation_scheme": "Sensory sample rows are jointly permuted against fixed recipe rows; the five sensory outcomes remain together.",
+  "recipe_distance": "Euclidean distance on the four ingredient proportions (equivalent scaling to grams because total mass is fixed).",
+  "sensory_distance": "Euclidean distance on the five per-recipe sensory means after column-wise standardization.",
+  "global_multivariate": {
+    "mantel_pearson_r": 0.11693801682735502,
+    "two_sided_exceedances": 255,
+    "permutation_p_value": 0.0512,
+    "null_95pct_interval": [
+      -0.10810642887467546,
+      0.12588494197770142
+    ]
+  },
+  "per_target_supplementary": {
+    "appearance": {
+      "mantel_pearson_r": 0.072795068598718,
+      "two_sided_exceedances": 1583,
+      "permutation_p_value": 0.3168,
+      "null_95pct_interval": [
+        -0.1333193373502244,
+        0.14755177913365383
+      ],
+      "holm_adjusted_p_value": 0.6336
+    },
+    "infusion_color": {
+      "mantel_pearson_r": 0.12457720432230034,
+      "two_sided_exceedances": 272,
+      "permutation_p_value": 0.0546,
+      "null_95pct_interval": [
+        -0.12140857903187684,
+        0.13436660551495938
+      ],
+      "holm_adjusted_p_value": 0.1638
+    },
+    "aroma": {
+      "mantel_pearson_r": 0.046233218128995855,
+      "two_sided_exceedances": 2276,
+      "permutation_p_value": 0.4554,
+      "null_95pct_interval": [
+        -0.11473408623703601,
+        0.13447537442419896
+      ],
+      "holm_adjusted_p_value": 0.6336
+    },
+    "taste": {
+      "mantel_pearson_r": 0.1560706562097841,
+      "two_sided_exceedances": 79,
+      "permutation_p_value": 0.016,
+      "null_95pct_interval": [
+        -0.11062495833368144,
+        0.1330537309029064
+      ],
+      "holm_adjusted_p_value": 0.08
+    },
+    "overall_score": {
+      "mantel_pearson_r": 0.12313214256670896,
+      "two_sided_exceedances": 130,
+      "permutation_p_value": 0.0262,
+      "null_95pct_interval": [
+        -0.09833127837315903,
+        0.11919023265835584
+      ],
+      "holm_adjusted_p_value": 0.1048
+    }
+  },
+  "interpretation_limit": "A non-significant test means this sample did not detect distance association at the chosen threshold; it does not establish that association is absent and does not test causality or predictive performance."
+}

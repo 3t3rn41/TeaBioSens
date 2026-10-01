@@ -50,7 +50,7 @@ permutation_gate = predictor.trustworthiness_metrics.get("permutation_test", {})
 gate_b_permutation_p = permutation_gate.get("gate_b_empirical_p")
 ai_enabled = direct_gate.get("status") == "PASS" and gate_b_permutation_p is not None and gate_b_permutation_p < 0.05
 warning_banner()
-st.caption("当前系统只接受 4.0 g 总量、0.5 g 步长定义的 32 个合法离散格点。所有验证指标均为当前设计空间内部重建结果。")
+st.caption("当前系统只接受 4.0 g 总量、0.5 g 步长定义的 32 个合法离散格点。所有验证指标均为当前设计空间内部重建结果；Solubility 保留为实测描述字段，不参与预测目标。")
 
 tab_overview, tab_known, tab_predict, tab_rank, tab_detail = st.tabs([
     "A · 数据概览", "B · 已知配方", "C · 单配方预测", "D · 设计空间排序", "E · 候选详情"

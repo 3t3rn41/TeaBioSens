@@ -8,17 +8,16 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .constants import CHEMISTRY_BASE, RECIPE_FEATURES, SENSORY_TARGETS
+from .constants import CHEMISTRY_BASE, MODEL_SENSORY_TARGETS, RECIPE_FEATURES, SENSORY_TARGETS
 from .design_space import DESIGN_COLUMNS_G, RecipeDesignSpace, enumerate_valid_design_points
 from .inference import TeaPredictor
 from .io import project_root, write_json
 
 DEFAULT_WEIGHTED_SENSORY = {
-    "appearance": 0.15,
-    "infusion_color": 0.15,
-    "aroma": 0.20,
-    "taste": 0.35,
-    "solubility": 0.15,
+    "appearance": 0.17647,
+    "infusion_color": 0.17647,
+    "aroma": 0.23529,
+    "taste": 0.41177,
 }
 RECOMMENDATION_PERMUTATION_ALPHA = 0.05
 
@@ -37,8 +36,8 @@ def _objective(values: dict, objective: str, weights: dict[str, float] | None = 
         return float(values[key_map[objective]])
     if objective in {"weighted_sensory", "maximize_weighted_sensory"}:
         selected_weights = weights or DEFAULT_WEIGHTED_SENSORY
-        if set(selected_weights) - set(SENSORY_TARGETS):
-            raise ValueError(f"Unknown weighted sensory targets: {set(selected_weights) - set(SENSORY_TARGETS)}")
+        if set(selected_weights) - set(MODEL_SENSORY_TARGETS):
+            raise ValueError(f"Unknown or descriptive-only weighted sensory targets: {set(selected_weights) - set(MODEL_SENSORY_TARGETS)}")
         total = float(sum(selected_weights.values()))
         if total <= 0 or any(weight < 0 for weight in selected_weights.values()):
             raise ValueError("Weighted sensory weights must be non-negative with positive sum")
@@ -140,7 +139,7 @@ def rank_design_space(
         predicted_sensory = prediction["path_b_sensory"]
         path_a_sensory = prediction["path_a_sensory"]
         pred_objective = _objective(predicted_sensory, objective, weighted_sensory)
-        disagreement = _objective({name: prediction["model_disagreement_by_target"][name] for name in SENSORY_TARGETS}, objective, weighted_sensory)
+        disagreement = _objective({name: prediction["model_disagreement_by_target"][name] for name in MODEL_SENSORY_TARGETS}, objective, weighted_sensory)
         pred_std = _objective_std(prediction["path_b_uncertainty"], objective, weighted_sensory)
         measured_row = observed_lookup.get(tuple(float(v) for v in point))
         if status == "OBSERVED":

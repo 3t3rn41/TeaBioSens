@@ -49,6 +49,12 @@ CHEMISTRY_ALL = CHEMISTRY_BASE + CHEMISTRY_RATIOS
 SENSORY_TARGETS = [
     "appearance", "infusion_color", "aroma", "taste", "solubility", "overall_score",
 ]
+# All six sensory fields remain in the measured-data schema. Solubility is
+# descriptive only: its between-recipe signal is too small relative to the
+# within-recipe rating spread for the current 30-recipe modeling set.
+MODEL_SENSORY_TARGETS = [
+    "appearance", "infusion_color", "aroma", "taste", "overall_score",
+]
 SENSORY_SCORE_COLUMNS = [f"{name}_mean" for name in SENSORY_TARGETS]
 SAMPLE_COUNTS = {f"S{i}": 20 for i in range(1, 30)} | {"S30": 17}
 DATA_VERSION = "1.0.0"
@@ -60,4 +66,3 @@ RATIO_FORMULAS = {
     "protein_tp": ("protein_ug_g", "tp_mggae_g"),
     "tf_tr": ("tf_pct", "tr_pct"),
 }
-

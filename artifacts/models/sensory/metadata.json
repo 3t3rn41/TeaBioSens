@@ -5,8 +5,10 @@
     "infusion_color",
     "aroma",
     "taste",
-    "solubility",
     "overall_score"
+  ],
+  "excluded_descriptive_targets": [
+    "solubility"
   ],
   "selected_models": {
     "appearance": {
@@ -50,17 +52,6 @@
         "rmse": 6.500195992997765,
         "r2": 0.6622303215438987,
         "spearman": 0.8291434927697442,
-        "n": 30
-      }
-    },
-    "solubility": {
-      "model": "pls",
-      "feature_set": "chemistry_a",
-      "metrics": {
-        "mae": 2.7647084574860066,
-        "rmse": 3.5665225322790017,
-        "r2": 0.09996390849898162,
-        "spearman": 0.5230255839822024,
         "n": 30
       }
     },

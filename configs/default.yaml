@@ -13,5 +13,5 @@ sensory_targets:
   - infusion_color
   - aroma
   - taste
-  - solubility
   - overall_score
+descriptive_only_sensory_fields: [solubility]

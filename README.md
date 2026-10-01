@@ -5,6 +5,9 @@ TeaBlend AI is a reproducible, leakage-aware prototype for recipe-to-chemistry a
 ## Evidence and limitations
 
 - The source sheet contains 597 sensory rating rows but only 30 independent recipe blends. All validation keeps each `sample_code` wholly within one fold.
+- Six sensory fields remain in the observed-data table. Solubility is retained for descriptive display but excluded from M4/M5 model fitting and recommendation targets because its estimated between-recipe variance share is low relative to within-recipe rating spread.
+- A one-way random-effects variance decomposition shows that current blend-mean reliability is already about 0.80–0.94 for the five modeled outcomes, while independent recipe count remains 30. The next data request should prioritize independent recipes over more ratings of the same recipe. Missing evaluator IDs limit interpretation of the within-recipe component.
+- A model-free Mantel test compares recipe-distance and multivariate sensory-distance matrices with joint-row permutation. A non-significant result is reported as no detected association in this sample, not proof that no association exists.
 - Current coverage is 30/32 = 93.75% of the enumerated discrete space. The model's Leave-One-Blend-Out scores measure within-design reconstruction, not arbitrary or industrial recipe generalization.
 - Measured blend results are used directly for the 30 observed points. Model predictions, uncertainty estimates and path disagreement are used for the two legal but unobserved points.
 - A Gaussian Process spread is a model-based uncertainty estimate, not a calibrated confidence interval. Prediction-based recommendations are enabled only when the direct Overall score beats both mean-baseline OOF metrics and the selection-adjusted joint-label permutation test has p < 0.05. Missing validation results or a failed permutation check disable automated prediction-based Top-K recommendations.
@@ -43,19 +46,23 @@ python scripts/04_train_recipe_sensory.py
 # 6. Enumerate, score and rank exactly the 32 legal design points
 python scripts/05_build_optimizer.py
 
-# 7. Generate the final report
+# 7. Run model-free association and rating-noise diagnostics
+python scripts/09_validate_recipe_sensory_association.py --permutations 4999 --seed 42
+python scripts/10_sensory_noise_decomposition.py
+
+# 8. Generate the final report
 python scripts/06_generate_report.py
 
-# 8. Run all phases in order
+# 9. Run all phases in order, including 200 Gate B permutations and the final tests
 python scripts/07_run_full_pipeline.py
 
-# 9. Run the full contract, leakage, design-space, optimizer and inference tests
+# 10. Run the full contract, leakage, design-space, optimizer and inference tests
 pytest -q
 
-# 10. Run the selection-adjusted credibility check (200 joint-label permutations)
+# 11. Run the selection-adjusted credibility check (200 joint-label permutations)
 python scripts/08_validate_gate_b.py --permutations 200 --seed 42 --n-jobs 7
 
-# 11. Launch the interactive demo
+# 12. Launch the interactive demo
 streamlit run app/app.py
 ```
 
@@ -71,6 +78,8 @@ If the optional XGBoost or CatBoost package is unavailable, training records tha
 - `artifacts/optimization/next_experiments.csv`: the two missing valid recipes, prioritized for physical measurement.
 - `artifacts/optimization/top_candidates.csv`: measured-first candidate ranking under Gate B and user constraints.
 - `artifacts/reports/gate_b_validation/`: 200-run joint-label permutation test and per-fold sensitivity analysis; generate with `python scripts/08_validate_gate_b.py`. Pass `--permutations 500` for finer p-value resolution.
+- `artifacts/reports/sensory_noise_decomposition/`: between-recipe and within-recipe rating variance components for all six observed fields.
+- `artifacts/reports/recipe_sensory_mantel/`: model-free global and per-target Mantel distance association results.
 
 Recipe → Chemistry compares a quadratic Scheffé mixture model (`sum(beta_i*x_i) + sum(beta_ij*x_i*x_j)`, no intercept) against the existing baselines and model families using the same Leave-One-Blend-Out folds.
 

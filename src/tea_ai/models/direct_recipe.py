@@ -1,6 +1,6 @@
 """Direct recipe-to-sensory model task."""
 
-from ..constants import RECIPE_FEATURES, SENSORY_TARGETS
+from ..constants import MODEL_SENSORY_TARGETS, RECIPE_FEATURES
 from .common import candidate_estimators
 
 
@@ -9,9 +9,8 @@ def recipe_features(frame):
 
 
 def recipe_targets():
-    return SENSORY_TARGETS
+    return MODEL_SENSORY_TARGETS
 
 
 def recipe_candidates(n_features=4):
     return candidate_estimators(n_features)
-

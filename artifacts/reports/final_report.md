@@ -1,6 +1,6 @@
 # TeaBioSens 茶叶智能拼配 V0.4 原型报告
 
-生成日期：2026-10-01 12:15 UTC
+生成日期：2026-10-01 13:32 UTC
 
 > 本报告中的预测均为当前公开数据和当前实验设计内的模型估计。配方仅为建模/实验候选，未经食品研发实验和法规验证，不用于直接生产。
 
@@ -11,6 +11,22 @@
 - 完全重复评分记录：5 行，作为源数据保留；评分重复不改变独立配方数。
 - 独立实验配方数为 30。S1–S29 各有 20 条评分，S30 有 17 条。
 - 四种茶配方总质量均为 4.0 g，19 个理化字段在同一 `sample_code` 内恒定。4 个派生比值经逐项公式核对。
+
+### 感官评分方差分解与建模目标
+
+下表用不平衡单因素随机效应 ANOVA 矩估计，将评分变异分为配方间方差与同配方内评分方差。评价者 ID 缺失，因此同配方内项包含评价者差异及其他残差，不能解释为纯测量误差。
+
+| 感官项 | 配方间方差 | 同配方内评分方差 | 配方间占比 | 同配方内占比 | 配方均值可靠度（当前评分数） | 达到均值标准误低于配方间标准差所需评分数* |
+|---|---:|---:|---:|---:|---:|---:|
+| `appearance` | 21.136 | 105.483 | 16.7% | 83.3% | 0.799 | 5 |
+| `infusion_color` | 33.457 | 117.188 | 22.2% | 77.8% | 0.850 | 4 |
+| `aroma` | 57.777 | 169.089 | 25.5% | 74.5% | 0.872 | 3 |
+| `taste` | 120.570 | 170.596 | 41.4% | 58.6% | 0.934 | 2 |
+| `solubility` | 6.675 | 151.448 | 4.2% | 95.8% | 0.467 | 23 |
+| `overall_score` | 48.772 | 57.405 | 45.9% | 54.1% | 0.944 | 2 |
+
+* 这是方差分量下的精度参考，不是正式样本量/功效分析。当前每个配方约有 20 条评分；除 solubility 外，配方均值可靠度约为 0.80–0.94。最优先增加独立配方数，因为重复评价不能增加独立配方样本量。
+Solubility 的配方间方差占比仅 4.2%，当前配方均值可靠度约 0.467；所以它保留为测量和描述字段，但从 M4/M5 训练、Gate B 与推荐目标中剔除。其余五项构成建模目标。
 
 ### 离散设计空间
 
@@ -252,20 +268,6 @@ M3 Gate：**PASS** — 8/15 base chemistry targets improved both OOF MAE and RMS
 | `taste` | `chemistry_b:random_forest` | 6.7832 | 8.8518 | 0.3736 | 0.5849 |
 | `taste` | `chemistry_b:xgboost` | 6.8571 | 8.3175 | 0.4470 | 0.6552 |
 | `taste` | `chemistry_b:catboost` | 6.0074 | 7.1256 | 0.5941 | 0.7580 |
-| `solubility` | `mean` | 3.0486 | 3.8862 | -0.0686 | -0.9996 |
-| `solubility` | `nearest_chemistry` | 3.7547 | 4.9402 | -0.7269 | 0.1789 |
-| `solubility` | `chemistry_a:ridge` | 3.9428 | 4.7926 | -0.6252 | 0.3655 |
-| `solubility` | `chemistry_a:pls` | 2.7647 | 3.5665 | 0.1000 | 0.5230 |
-| `solubility` | `chemistry_a:gpr` | 2.9786 | 3.7414 | 0.0095 | 0.3495 |
-| `solubility` | `chemistry_a:random_forest` | 3.3194 | 3.9323 | -0.0941 | 0.1746 |
-| `solubility` | `chemistry_a:xgboost` | 3.2202 | 3.8266 | -0.0361 | 0.2952 |
-| `solubility` | `chemistry_a:catboost` | 3.1046 | 3.7513 | 0.0043 | 0.2325 |
-| `solubility` | `chemistry_b:ridge` | 4.4177 | 5.5997 | -1.2187 | 0.2734 |
-| `solubility` | `chemistry_b:pls` | 2.7990 | 3.7092 | 0.0265 | 0.4616 |
-| `solubility` | `chemistry_b:gpr` | 3.0680 | 3.7953 | -0.0192 | 0.1537 |
-| `solubility` | `chemistry_b:random_forest` | 3.3819 | 4.0193 | -0.1430 | 0.1168 |
-| `solubility` | `chemistry_b:xgboost` | 3.2996 | 3.9176 | -0.0859 | 0.2258 |
-| `solubility` | `chemistry_b:catboost` | 3.0668 | 3.7582 | 0.0006 | 0.2405 |
 | `overall_score` | `mean` | 6.6530 | 7.3143 | -0.0701 | -1.0000 |
 | `overall_score` | `nearest_chemistry` | 3.3817 | 4.7620 | 0.5464 | 0.8185 |
 | `overall_score` | `chemistry_a:ridge` | 4.2941 | 5.1037 | 0.4790 | 0.7637 |
@@ -281,7 +283,7 @@ M3 Gate：**PASS** — 8/15 base chemistry targets improved both OOF MAE and RMS
 | `overall_score` | `chemistry_b:xgboost` | 5.2932 | 6.4546 | 0.1667 | 0.4643 |
 | `overall_score` | `chemistry_b:catboost` | 4.8186 | 5.6366 | 0.3645 | 0.5884 |
 
-M4 Gate：**PASS** — 6/6 blend-mean targets improved both OOF MAE and RMSE over the mean baseline.
+M4 Gate：**PASS** — 5/5 modeled blend-mean targets improved both OOF MAE and RMSE over the mean baseline.
 
 Chemistry-A 使用 15 个基础理化变量；Chemistry-B 使用 15 个基础变量加 4 个派生比值。
 
@@ -325,14 +327,6 @@ Chemistry-A 使用 15 个基础理化变量；Chemistry-B 使用 15 个基础变
 | `taste` | `random_forest` | 7.8520 | 9.2419 | 0.3172 | 0.5275 |
 | `taste` | `xgboost` | 7.9728 | 9.5570 | 0.2698 | 0.5012 |
 | `taste` | `catboost` | 7.5287 | 9.1484 | 0.3310 | 0.5413 |
-| `solubility` | `mean` | 3.0527 | 3.8890 | -0.0702 | -1.0000 |
-| `solubility` | `nearest_recipe` | 3.8112 | 4.4945 | -0.4293 | 0.2762 |
-| `solubility` | `ridge_a` | 2.7708 | 3.5863 | 0.0899 | 0.4345 |
-| `solubility` | `pls` | 2.7842 | 3.6018 | 0.0821 | 0.4380 |
-| `solubility` | `gpr` | 2.9127 | 3.7706 | -0.0060 | 0.2338 |
-| `solubility` | `random_forest` | 2.6786 | 3.4004 | 0.1819 | 0.4492 |
-| `solubility` | `xgboost` | 2.7494 | 3.4375 | 0.1639 | 0.4300 |
-| `solubility` | `catboost` | 2.9341 | 3.6509 | 0.0569 | 0.3388 |
 | `overall_score` | `mean` | 6.6587 | 7.3145 | -0.0702 | -1.0000 |
 | `overall_score` | `nearest_recipe` | 7.8076 | 8.7953 | -0.5473 | 0.2126 |
 | `overall_score` | `ridge_a` | 4.6026 | 5.8744 | 0.3097 | 0.6222 |
@@ -342,18 +336,26 @@ Chemistry-A 使用 15 个基础理化变量；Chemistry-B 使用 15 个基础变
 | `overall_score` | `xgboost` | 5.0178 | 6.0589 | 0.2657 | 0.5261 |
 | `overall_score` | `catboost` | 4.8657 | 5.8545 | 0.3144 | 0.5253 |
 
-M5 / Gate B：**PASS** — Overall-score OOF MAE/RMSE both improve over the mean baseline; 6/6 targets improved both metrics.
+M5 / Gate B（原始 OOF 数值门槛）：**PASS** — Overall-score OOF MAE/RMSE both improve over the mean baseline; 5/5 modeled targets improved both metrics.
 Overall score 选中模型 `pls`：MAE 4.5911、RMSE 5.9042；Mean baseline：MAE 6.6587、RMSE 7.3145。
 
-当 Gate B 未通过时，Demo 将关闭未测点的自动推荐资格，仍展示实测配方排序与补点实验计划。
+当原始 OOF Gate B 未通过，或置换可信度未通过时，Demo 都会关闭未测点的自动推荐资格，仍展示实测配方排序与补点实验计划。
 
 ### Gate B 可信度补充：置换检验与逐折敏感性
 
-对六项样品级感官均值做 200 次联合行置换，并在每次置换中重跑候选模型和逐目标选模。六项目标同时改善的经验 p 值为 0.099502（19 次达到或超过观测值；置换率95%精确区间 5.817%–14.438%）；Overall-score Gate B 的经验 p 值为 0.482587（96 次通过；置换率95%精确区间 40.901%–55.159%）。
+对五项建模感官均值做 200 次联合行置换，并在每次置换中重跑候选模型和逐目标选模。观测到 5/5 项的 MAE 与 RMSE 同时改善；置换中达到或超过该数量的经验 p 值为 0.154229（30 次；置换率95%精确区间 10.355%–20.716%）。Overall-score Gate B 的经验 p 值为 0.482587（96 次通过；置换率95%精确区间 40.901%–55.159%）。
 
-按预设 α=0.05，六项目标同时改善未达到显著性，Overall-only Gate B 在无关联置换下仍有 96/200 次通过。因此原始 OOF 数值门槛虽为 PASS，自动预测推荐可信度门槛为 **NOT VALIDATED**；未观测点预测不会进入 Top-K 自动推荐。
+按预设 α=0.05，自动预测推荐可信度门槛为 **NOT VALIDATED**；未观测点预测不会进入 Top-K 自动推荐。
 
 置换检验以无配方—感官关联时配方行与感官向量可交换为条件；它不是外部验证，也不能替代新配方实测。逐折误差与删一评估折敏感性见 `artifacts/reports/gate_b_validation/`。
+
+### 无模型的配方—感官距离关联检验
+
+在 30 个独立配方上，比较四维配方比例欧氏距离与标准化五维感官均值欧氏距离；Mantel Pearson r=0.1169，联合行置换 4999 次、双侧经验 p=0.051200，置换零分布 95% 区间为 -0.1081–0.1259。
+
+该检验在当前样本中未检测到显著的整体配方—感官距离关联（p 略高于 0.05）；这不等于证明关联不存在，n=30 的检验能力有限。
+单目标补充检验经 Holm 校正后的最低 p 值为 0.080，没有单一目标在校正后达到 0.05。
+各目标的补充 Mantel 结果及 Holm 多重比较校正见 `artifacts/reports/recipe_sensory_mantel/recipe_sensory_mantel.csv`。该分析独立于模型族，不以预测误差或模型选择作为统计量。
 
 ## 6. 双预测路径、不确定性与设计空间状态
 
@@ -405,6 +407,7 @@ GPR predictive standard deviation 是模型估计的 spread，不是经覆盖率
 - OOF 预测：`artifacts/predictions/`；综合已选模型误差表：`prediction_error_by_sample.csv`；模型与字段顺序：`artifacts/models/`。
 - 32 点全表、下一次实验、Top 候选：`artifacts/optimization/`。
 - Streamlit 页面：`app/app.py`；启动：`streamlit run app/app.py`。
-- 完整复现：`python scripts/07_run_full_pipeline.py`；测试：`pytest -q`。
+- 方差分解：`artifacts/reports/sensory_noise_decomposition/`；模型无关关联检验：`artifacts/reports/recipe_sensory_mantel/`。
+- 完整复现：`python scripts/07_run_full_pipeline.py`；Gate B 选择调整置换：`python scripts/08_validate_gate_b.py --permutations 200 --seed 42 --n-jobs 7`；测试：`pytest -q`。
 
 **Demo 判定：** 可演示。 **原始 Gate B 数值门槛：** PASS。 **自动预测推荐可信度：** 未通过；只展示实测排序，未观测预测仅作实验估计。 **指导实验判定：** 预测点仅用于安排两项验证实验，不作为生产依据。

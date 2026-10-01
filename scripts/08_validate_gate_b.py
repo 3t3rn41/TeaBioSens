@@ -19,7 +19,7 @@ from sklearn.exceptions import ConvergenceWarning
 from threadpoolctl import threadpool_limits
 
 from _common import ROOT
-from tea_ai.constants import LINEAR_RECIPE_FEATURES, RECIPE_FEATURES, SENSORY_TARGETS
+from tea_ai.constants import LINEAR_RECIPE_FEATURES, MODEL_SENSORY_TARGETS, RECIPE_FEATURES
 from tea_ai.metrics import regression_metrics
 from tea_ai.models.common import candidate_estimators
 from tea_ai.cv import leave_one_out
@@ -43,7 +43,7 @@ def _init_worker(root_path: str):
     frame = pd.read_csv(root / "data/processed/blend_master.csv")
     _X_ALL = frame[RECIPE_FEATURES]
     _X_LINEAR = frame[LINEAR_RECIPE_FEATURES]
-    _TARGETS = list(SENSORY_TARGETS)
+    _TARGETS = list(MODEL_SENSORY_TARGETS)
     _Y = frame[[f"{name}_mean" for name in _TARGETS]].to_numpy(dtype=float)
     _FOLDS = list(leave_one_out(len(frame)))
     optional = candidate_estimators(4)
@@ -110,7 +110,7 @@ def _one_permutation(task: tuple[int, list[int]]) -> dict:
     return {
         "permutation_id": int(permutation_id),
         "n_targets_improved": int(sum(improved.values())),
-        "all_six_improved": bool(all(improved.values())),
+        "all_modeled_targets_improved": bool(all(improved.values())),
         "gate_b_overall_pass": bool(improved["overall_score"]),
         **{f"improved_{target}": bool(value) for target, value in improved.items()},
         **{f"selected_{target}": name for target, name in selected.items()},
@@ -124,7 +124,7 @@ def _fold_sensitivity(root: Path, out_dir: Path) -> dict:
     deletion_rows = []
     summaries = {}
 
-    for target in SENSORY_TARGETS:
+    for target in MODEL_SENSORY_TARGETS:
         chosen = metrics["by_target"][target]["selected_model"]
         rows = oof[oof["target"] == target]
         selected = rows[rows["model"] == chosen].set_index("sample_code").sort_index()
@@ -207,10 +207,10 @@ def _fold_sensitivity(root: Path, out_dir: Path) -> dict:
 def _markdown_report(result: dict) -> str:
     lines = [
         "# Recipe → Sensory credibility checks", "",
-        f"Permutation test: {result['permutation_test']['permutations']} joint row permutations, seed {result['permutation_test']['seed']}; row-wise permutation keeps the six sensory outcomes together.",
+        f"Permutation test: {result['permutation_test']['permutations']} joint row permutations, seed {result['permutation_test']['seed']}; row-wise permutation keeps all five modeled sensory outcomes together.",
         "The model family selection rule is re-run inside every permutation. The empirical one-sided p-value uses (1 + exceedances) / (B + 1). This is a conditional null test assuming recipe-label exchangeability under no recipe/sensory association; it is not an external validation set.", "",
-        f"- Observed targets improving both OOF MAE and RMSE: {result['observed']['n_targets_improved']}/6.",
-        f"- Null permutations with 6/6 improving: {result['permutation_test']['six_of_six_exceedances']} / {result['permutation_test']['permutations']}; empirical p = {result['permutation_test']['six_of_six_empirical_p']:.6f}.",
+        f"- Observed modeled targets improving both OOF MAE and RMSE: {result['observed']['n_targets_improved']}/5.",
+        f"- Null permutations with at least {result['observed']['n_targets_improved']}/5 targets improving: {result['permutation_test']['improvement_count_exceedances']} / {result['permutation_test']['permutations']}; empirical p = {result['permutation_test']['improvement_count_empirical_p']:.6f}.",
         f"- Null permutations with Overall-score Gate B passing: {result['permutation_test']['gate_b_exceedances']} / {result['permutation_test']['permutations']}; empirical p = {result['permutation_test']['gate_b_empirical_p']:.6f}.", "",
         "## LOO fold sensitivity", "",
         "Each row in `gate_b_fold_sensitivity.csv` is one held-out blend. `fold_deletion_sensitivity.csv` removes that evaluation row from the already-computed OOF vector and recomputes aggregate MAE/RMSE; it measures metric concentration and does not retrain folds.", "",
@@ -253,7 +253,7 @@ def main():
     }
     observed = {
         "n_targets_improved": int(sum(observed_passes.values())),
-        "all_six_improved": bool(all(observed_passes.values())),
+        "all_modeled_targets_improved": bool(all(observed_passes.values())),
         "gate_b_overall_pass": observed_passes["overall_score"],
         "selected_models": {target: info["selected_model"] for target, info in direct["by_target"].items()},
     }
@@ -275,17 +275,18 @@ def main():
 
     rows.sort(key=lambda row: row["permutation_id"])
     pd.DataFrame(rows).to_csv(out_dir / "gate_b_permutation_distribution.csv", index=False)
-    six_events = sum(row["n_targets_improved"] >= observed["n_targets_improved"] for row in rows)
+    improvement_count_events = sum(row["n_targets_improved"] >= observed["n_targets_improved"] for row in rows)
     gate_events = sum(bool(row["gate_b_overall_pass"]) >= observed["gate_b_overall_pass"] for row in rows)
-    six_ci = binomtest(six_events, len(rows)).proportion_ci(confidence_level=0.95, method="exact")
+    improvement_count_ci = binomtest(improvement_count_events, len(rows)).proportion_ci(confidence_level=0.95, method="exact")
     gate_ci = binomtest(gate_events, len(rows)).proportion_ci(confidence_level=0.95, method="exact")
     permutation_summary = {
         "permutations": len(rows), "seed": args.seed,
-        "permutation_scheme": "joint row permutation of the six sample-level sensory means; recipe rows stay fixed",
+        "permutation_scheme": "joint row permutation of the five modeled sample-level sensory means; recipe rows stay fixed",
         "selection_rule": "repeat the direct Recipe->Sensory per-target selection over all installed candidate families in every permutation",
-        "six_of_six_exceedances": int(six_events),
-        "six_of_six_empirical_p": float((six_events + 1) / (len(rows) + 1)),
-        "six_of_six_null_rate_95pct_exact_ci": [float(six_ci.low), float(six_ci.high)],
+        "observed_n_targets_improved": int(observed["n_targets_improved"]),
+        "improvement_count_exceedances": int(improvement_count_events),
+        "improvement_count_empirical_p": float((improvement_count_events + 1) / (len(rows) + 1)),
+        "improvement_count_null_rate_95pct_exact_ci": [float(improvement_count_ci.low), float(improvement_count_ci.high)],
         "gate_b_exceedances": int(gate_events),
         "gate_b_empirical_p": float((gate_events + 1) / (len(rows) + 1)),
         "gate_b_null_rate_95pct_exact_ci": [float(gate_ci.low), float(gate_ci.high)],
@@ -301,7 +302,7 @@ def main():
     }
     (out_dir / "gate_b_trustworthiness.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (out_dir / "gate_b_trustworthiness.md").write_text(_markdown_report(result), encoding="utf-8")
-    print(f"[PERM] 6/6 empirical p={permutation_summary['six_of_six_empirical_p']:.6f}; Gate B empirical p={permutation_summary['gate_b_empirical_p']:.6f}", flush=True)
+    print(f"[PERM] at-least-observed-target-count p={permutation_summary['improvement_count_empirical_p']:.6f}; Gate B empirical p={permutation_summary['gate_b_empirical_p']:.6f}", flush=True)
     print(f"[OUTPUT] {out_dir}", flush=True)
     print(f"[DONE] total elapsed={time.monotonic() - started:.1f}s", flush=True)
 

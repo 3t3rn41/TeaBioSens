@@ -58,8 +58,12 @@ def main():
     chem = load_json(ROOT / "artifacts/reports/recipe_chemistry_metrics.json")
     sens = load_json(ROOT / "artifacts/reports/chemistry_sensory_metrics.json")
     direct = load_json(ROOT / "artifacts/reports/recipe_sensory_metrics.json")
+    noise = load_json(ROOT / "artifacts/reports/sensory_noise_decomposition/sensory_noise_decomposition.json")
+    mantel = load_json(ROOT / "artifacts/reports/recipe_sensory_mantel/recipe_sensory_mantel.json")
     trust_path = ROOT / "artifacts/reports/gate_b_validation/gate_b_trustworthiness.json"
     trust = load_json(trust_path) if trust_path.exists() else None
+    if trust and "five modeled sample-level" not in trust.get("permutation_test", {}).get("permutation_scheme", ""):
+        trust = None
     opt = load_json(ROOT / "artifacts/optimization/optimization_summary.json")
     top = pd.read_csv(ROOT / "artifacts/optimization/top_candidates.csv")
     next_exp = pd.read_csv(ROOT / "artifacts/optimization/next_experiments.csv")
@@ -80,6 +84,22 @@ def main():
         f"- 完全重复评分记录：{audit['exact_duplicate_rows']} 行，作为源数据保留；评分重复不改变独立配方数。",
         "- 独立实验配方数为 30。S1–S29 各有 20 条评分，S30 有 17 条。",
         "- 四种茶配方总质量均为 4.0 g，19 个理化字段在同一 `sample_code` 内恒定。4 个派生比值经逐项公式核对。", "",
+        "### 感官评分方差分解与建模目标", "",
+        "下表用不平衡单因素随机效应 ANOVA 矩估计，将评分变异分为配方间方差与同配方内评分方差。评价者 ID 缺失，因此同配方内项包含评价者差异及其他残差，不能解释为纯测量误差。", "",
+        "| 感官项 | 配方间方差 | 同配方内评分方差 | 配方间占比 | 同配方内占比 | 配方均值可靠度（当前评分数） | 达到均值标准误低于配方间标准差所需评分数* |", "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for target, values in noise["targets"].items():
+        reliability = values["mean_of_recipe_mean_reliability"]
+        needed = values["ratings_needed_for_mean_se_below_between_recipe_sd"]
+        lines.append(
+            f"| `{target}` | {values['between_recipe_variance']:.3f} | {values['within_recipe_rating_variance']:.3f} | "
+            f"{values['between_recipe_variance_share']:.1%} | {values['within_recipe_variance_share']:.1%} | "
+            f"{reliability:.3f} | {needed if needed is not None else '—'} |"
+        )
+    sol = noise["targets"]["solubility"]
+    lines.extend([
+        "", "* 这是方差分量下的精度参考，不是正式样本量/功效分析。当前每个配方约有 20 条评分；除 solubility 外，配方均值可靠度约为 0.80–0.94。最优先增加独立配方数，因为重复评价不能增加独立配方样本量。",
+        f"Solubility 的配方间方差占比仅 {sol['between_recipe_variance_share']:.1%}，当前配方均值可靠度约 {sol['mean_of_recipe_mean_reliability']:.3f}；所以它保留为测量和描述字段，但从 M4/M5 训练、Gate B 与推荐目标中剔除。其余五项构成建模目标。", "",
         "### 离散设计空间", "",
         f"- 程序从原料用量水平与 4.0 g 总质量约束中重新枚举出 {coverage['valid_point_count']} 个合法格点。",
         f"- 当前观测 {coverage['observed_point_count']} 点，覆盖率 {coverage['coverage']:.2%}；这是当前定义离散空间的覆盖率，不代表工业配方范围。",
@@ -90,7 +110,7 @@ def main():
         "这些结果评估的是 `within-design reconstruction`：在当前合法离散空间内留出已观测格点后的重建能力，不证明对任意连续新配方或工业配方的泛化。", "",
         "## 3. Recipe → Chemistry", "",
         f"验证：{chem['cv_method']}。主目标为 15 个基础理化指标；4 个派生 ratio 在推理时由预测分子和分母重建。",
-    ]
+    ])
     append_comparison(lines, "按目标比较的 OOF 指标", chem["by_target"])
     lines.extend([
         f"M3 Gate：**{chem['gate']['status']}** — {chem['gate']['summary']}", "",
@@ -109,18 +129,27 @@ def main():
     selected = overall["selected_metrics"]
     baseline = overall["baseline"]
     lines.extend([
-        f"M5 / Gate B：**{gate['status']}** — {gate['summary']}",
+        f"M5 / Gate B（原始 OOF 数值门槛）：**{gate['status']}** — {gate['summary']}",
         f"Overall score 选中模型 `{overall['selected_model']}`：MAE {selected['mae']:.4f}、RMSE {selected['rmse']:.4f}；Mean baseline：MAE {baseline['mae']:.4f}、RMSE {baseline['rmse']:.4f}。",
-        "", "当 Gate B 未通过时，Demo 将关闭未测点的自动推荐资格，仍展示实测配方排序与补点实验计划。", "",
+        "", "当原始 OOF Gate B 未通过，或置换可信度未通过时，Demo 都会关闭未测点的自动推荐资格，仍展示实测配方排序与补点实验计划。", "",
     ])
     if trust:
         perm = trust["permutation_test"]
         lines.extend([
             "### Gate B 可信度补充：置换检验与逐折敏感性", "",
-            f"对六项样品级感官均值做 {perm['permutations']} 次联合行置换，并在每次置换中重跑候选模型和逐目标选模。六项目标同时改善的经验 p 值为 {perm['six_of_six_empirical_p']:.6f}（{perm['six_of_six_exceedances']} 次达到或超过观测值；置换率95%精确区间 {perm['six_of_six_null_rate_95pct_exact_ci'][0]:.3%}–{perm['six_of_six_null_rate_95pct_exact_ci'][1]:.3%}）；Overall-score Gate B 的经验 p 值为 {perm['gate_b_empirical_p']:.6f}（{perm['gate_b_exceedances']} 次通过；置换率95%精确区间 {perm['gate_b_null_rate_95pct_exact_ci'][0]:.3%}–{perm['gate_b_null_rate_95pct_exact_ci'][1]:.3%}）。", "",
-            f"按预设 α=0.05，六项目标同时改善未达到显著性，Overall-only Gate B 在无关联置换下仍有 {perm['gate_b_exceedances']}/{perm['permutations']} 次通过。因此原始 OOF 数值门槛虽为 PASS，自动预测推荐可信度门槛为 **{'PASS' if opt['ai_recommendation_enabled'] else 'NOT VALIDATED'}**；{'未观测点预测不会进入 Top-K 自动推荐' if not opt['ai_recommendation_enabled'] else '未观测点可进入带风险标记的 Top-K'}。", "",
+            f"对五项建模感官均值做 {perm['permutations']} 次联合行置换，并在每次置换中重跑候选模型和逐目标选模。观测到 {perm['observed_n_targets_improved']}/5 项的 MAE 与 RMSE 同时改善；置换中达到或超过该数量的经验 p 值为 {perm['improvement_count_empirical_p']:.6f}（{perm['improvement_count_exceedances']} 次；置换率95%精确区间 {perm['improvement_count_null_rate_95pct_exact_ci'][0]:.3%}–{perm['improvement_count_null_rate_95pct_exact_ci'][1]:.3%}）。Overall-score Gate B 的经验 p 值为 {perm['gate_b_empirical_p']:.6f}（{perm['gate_b_exceedances']} 次通过；置换率95%精确区间 {perm['gate_b_null_rate_95pct_exact_ci'][0]:.3%}–{perm['gate_b_null_rate_95pct_exact_ci'][1]:.3%}）。", "",
+            f"按预设 α=0.05，自动预测推荐可信度门槛为 **{'PASS' if opt['ai_recommendation_enabled'] else 'NOT VALIDATED'}**；{'未观测点预测不会进入 Top-K 自动推荐' if not opt['ai_recommendation_enabled'] else '未观测点可进入带风险标记的 Top-K'}。", "",
             "置换检验以无配方—感官关联时配方行与感官向量可交换为条件；它不是外部验证，也不能替代新配方实测。逐折误差与删一评估折敏感性见 `artifacts/reports/gate_b_validation/`。", "",
         ])
+
+    global_mantel = mantel["global_multivariate"]
+    lines.extend([
+        "### 无模型的配方—感官距离关联检验", "",
+        f"在 {mantel['n_independent_recipes']} 个独立配方上，比较四维配方比例欧氏距离与标准化五维感官均值欧氏距离；Mantel Pearson r={global_mantel['mantel_pearson_r']:.4f}，联合行置换 {mantel['permutations']} 次、双侧经验 p={global_mantel['permutation_p_value']:.6f}，置换零分布 95% 区间为 {global_mantel['null_95pct_interval'][0]:.4f}–{global_mantel['null_95pct_interval'][1]:.4f}。", "",
+        ("检验检测到整体配方—感官距离关联的统计证据；这不表示模型具有可用预测力，也不证明因果。" if global_mantel["permutation_p_value"] < 0.05 else "该检验在当前样本中未检测到显著的整体配方—感官距离关联（p 略高于 0.05）；这不等于证明关联不存在，n=30 的检验能力有限。"),
+        f"单目标补充检验经 Holm 校正后的最低 p 值为 {min(v['holm_adjusted_p_value'] for v in mantel['per_target_supplementary'].values()):.3f}，没有单一目标在校正后达到 0.05。",
+        "各目标的补充 Mantel 结果及 Holm 多重比较校正见 `artifacts/reports/recipe_sensory_mantel/recipe_sensory_mantel.csv`。该分析独立于模型族，不以预测误差或模型选择作为统计量。", "",
+    ])
 
     lines.extend([
         "## 6. 双预测路径、不确定性与设计空间状态", "",
@@ -155,7 +184,8 @@ def main():
         "- OOF 预测：`artifacts/predictions/`；综合已选模型误差表：`prediction_error_by_sample.csv`；模型与字段顺序：`artifacts/models/`。",
         "- 32 点全表、下一次实验、Top 候选：`artifacts/optimization/`。",
         "- Streamlit 页面：`app/app.py`；启动：`streamlit run app/app.py`。",
-        "- 完整复现：`python scripts/07_run_full_pipeline.py`；测试：`pytest -q`。", "",
+        "- 方差分解：`artifacts/reports/sensory_noise_decomposition/`；模型无关关联检验：`artifacts/reports/recipe_sensory_mantel/`。",
+        "- 完整复现：`python scripts/07_run_full_pipeline.py`；Gate B 选择调整置换：`python scripts/08_validate_gate_b.py --permutations 200 --seed 42 --n-jobs 7`；测试：`pytest -q`。", "",
         f"**Demo 判定：** 可演示。 **原始 Gate B 数值门槛：** {gate['status']}。 **自动预测推荐可信度：** {'通过' if opt['ai_recommendation_enabled'] else '未通过；只展示实测排序，未观测预测仅作实验估计'}。 **指导实验判定：** 预测点仅用于安排两项验证实验，不作为生产依据。", "",
     ])
     output = ROOT / "artifacts/reports/final_report.md"

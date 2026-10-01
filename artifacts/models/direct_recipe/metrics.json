@@ -12,8 +12,10 @@
     "infusion_color",
     "aroma",
     "taste",
-    "solubility",
     "overall_score"
+  ],
+  "excluded_descriptive_targets": [
+    "solubility"
   ],
   "by_target": {
     "appearance": {
@@ -344,88 +346,6 @@
         }
       }
     },
-    "solubility": {
-      "selected_model": "random_forest",
-      "selected_metrics": {
-        "mae": 2.678608417644761,
-        "rmse": 3.400382054297353,
-        "r2": 0.18186417202840643,
-        "spearman": 0.44916573971078977,
-        "n": 30
-      },
-      "baseline": {
-        "mae": 3.0526910074374576,
-        "rmse": 3.8890028948627506,
-        "r2": -0.07015457788347224,
-        "spearman": -1.0,
-        "n": 30
-      },
-      "nearest_recipe": {
-        "mae": 3.811230392156866,
-        "rmse": 4.49448753586696,
-        "r2": -0.4293228661086912,
-        "spearman": 0.2761625527020338,
-        "n": 30
-      },
-      "models": {
-        "mean": {
-          "mae": 3.0526910074374576,
-          "rmse": 3.8890028948627506,
-          "r2": -0.07015457788347224,
-          "spearman": -1.0,
-          "n": 30
-        },
-        "nearest_recipe": {
-          "mae": 3.811230392156866,
-          "rmse": 4.49448753586696,
-          "r2": -0.4293228661086912,
-          "spearman": 0.2761625527020338,
-          "n": 30
-        },
-        "ridge_a": {
-          "mae": 2.7708172007766914,
-          "rmse": 3.5863348246232554,
-          "r2": 0.08993660239541501,
-          "spearman": 0.43448275862068964,
-          "n": 30
-        },
-        "pls": {
-          "mae": 2.784248712898807,
-          "rmse": 3.6017714965107053,
-          "r2": 0.08208536433092417,
-          "spearman": 0.43804226918798667,
-          "n": 30
-        },
-        "gpr": {
-          "mae": 2.912719514003108,
-          "rmse": 3.770559940162952,
-          "r2": -0.005962239422001581,
-          "spearman": 0.23381535038932147,
-          "n": 30
-        },
-        "random_forest": {
-          "mae": 2.678608417644761,
-          "rmse": 3.400382054297353,
-          "r2": 0.18186417202840643,
-          "spearman": 0.44916573971078977,
-          "n": 30
-        },
-        "xgboost": {
-          "mae": 2.7494143419452755,
-          "rmse": 3.4375096375376466,
-          "r2": 0.16390075804223891,
-          "spearman": 0.43003337041156836,
-          "n": 30
-        },
-        "catboost": {
-          "mae": 2.934053628774634,
-          "rmse": 3.650930312529312,
-          "r2": 0.056858038454829396,
-          "spearman": 0.3388209121245828,
-          "n": 30
-        }
-      }
-    },
     "overall_score": {
       "selected_model": "pls",
       "selected_metrics": {
@@ -517,10 +437,9 @@
       "infusion_color",
       "aroma",
       "taste",
-      "solubility",
       "overall_score"
     ],
-    "summary": "Overall-score OOF MAE/RMSE both improve over the mean baseline; 6/6 targets improved both metrics."
+    "summary": "Overall-score OOF MAE/RMSE both improve over the mean baseline; 5/5 modeled targets improved both metrics."
   },
   "optional_models_available": [
     "xgboost",

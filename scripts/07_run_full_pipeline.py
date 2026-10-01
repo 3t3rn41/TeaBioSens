@@ -14,7 +14,9 @@ STEPS = [
     "scripts/02_train_recipe_chemistry.py",
     "scripts/03_train_chemistry_sensory.py",
     "scripts/04_train_recipe_sensory.py",
-    "scripts/05_build_optimizer.py",
+    "scripts/09_validate_recipe_sensory_association.py",
+    "scripts/10_sensory_noise_decomposition.py",
+    "scripts/08_validate_gate_b.py",
     "scripts/06_generate_report.py",
 ]
 
@@ -22,9 +24,17 @@ STEPS = [
 def main():
     for script in STEPS:
         print(f"[PIPELINE] {script}", flush=True)
-        result = subprocess.run([sys.executable, str(ROOT / script)], cwd=ROOT)
+        command = [sys.executable, str(ROOT / script)]
+        if script == "scripts/08_validate_gate_b.py":
+            command.extend(["--permutations", "200", "--seed", "42", "--n-jobs", "7"])
+        result = subprocess.run(command, cwd=ROOT)
         if result.returncode:
             raise SystemExit(f"Pipeline stopped at {script} with exit code {result.returncode}")
+        if script == "scripts/08_validate_gate_b.py":
+            print("[PIPELINE] rebuilding recommendations with the current Gate B permutation result", flush=True)
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/05_build_optimizer.py")], cwd=ROOT)
+            if result.returncode:
+                raise SystemExit("Pipeline stopped while rebuilding recommendations after Gate B")
         if script == "scripts/01_build_datasets.py":
             print("[PIPELINE] running dataset, feature, ratio, leakage and design-space acceptance checks", flush=True)
             result = subprocess.run([

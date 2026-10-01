@@ -11,15 +11,16 @@
     "infusion_color",
     "aroma",
     "taste",
-    "solubility",
     "overall_score"
+  ],
+  "excluded_descriptive_targets": [
+    "solubility"
   ],
   "selected_models": {
     "appearance": "catboost",
     "infusion_color": "pls",
     "aroma": "catboost",
     "taste": "ridge_a",
-    "solubility": "random_forest",
     "overall_score": "pls"
   },
   "interpretable_model": "scaled Ridge on representation A",

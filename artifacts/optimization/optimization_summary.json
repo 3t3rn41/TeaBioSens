@@ -42,10 +42,9 @@
       "infusion_color",
       "aroma",
       "taste",
-      "solubility",
       "overall_score"
     ],
-    "summary": "Overall-score OOF MAE/RMSE both improve over the mean baseline; 6/6 targets improved both metrics."
+    "summary": "Overall-score OOF MAE/RMSE both improve over the mean baseline; 5/5 modeled targets improved both metrics."
   },
   "recommendation_credibility_gate": {
     "raw_oof_gate_status": "PASS",

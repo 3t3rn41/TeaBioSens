@@ -9,7 +9,7 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from .constants import CHEMISTRY_ALL, CHEMISTRY_BASE, CHEMISTRY_RATIOS, RECIPE_FEATURES, SENSORY_TARGETS
+from .constants import CHEMISTRY_ALL, CHEMISTRY_BASE, CHEMISTRY_RATIOS, MODEL_SENSORY_TARGETS, RECIPE_FEATURES, SENSORY_TARGETS
 from .design_space import RecipeDesignSpace
 from .features import recompute_ratios, validate_recipe
 from .io import project_root
@@ -75,7 +75,7 @@ class TeaPredictor:
 
         path_a = {}
         path_a_std = {}
-        for target in SENSORY_TARGETS:
+        for target in MODEL_SENSORY_TARGETS:
             features = self.sensory["features_by_target"][target]
             estimator = self.sensory["estimators"][target]
             path_a[target] = float(np.asarray(estimator.predict(chemistry_frame[features])).reshape(-1)[0])
@@ -85,14 +85,14 @@ class TeaPredictor:
 
         path_b = {}
         path_b_std = {}
-        for target in SENSORY_TARGETS:
+        for target in MODEL_SENSORY_TARGETS:
             estimator = self.direct["estimators"][target]
             direct_features = self.direct["feature_order_by_target"][target]
             path_b[target] = float(np.asarray(estimator.predict(recipe_frame[direct_features])).reshape(-1)[0])
             gp = self.direct["uncertainty_estimators"][target]
             _, std = predict_mean_std(gp, recipe_frame)
             path_b_std[target] = float(std[0])
-        disagreement = {target: abs(path_a[target] - path_b[target]) for target in SENSORY_TARGETS}
+        disagreement = {target: abs(path_a[target] - path_b[target]) for target in MODEL_SENSORY_TARGETS}
         if not all(np.isfinite(value) for value in [*chemistry_mean.values(), *chemistry_std.values(), *path_a.values(), *path_a_std.values(), *path_b.values(), *path_b_std.values(), *disagreement.values()] if value is not None):
             raise FloatingPointError("Model inference returned a non-finite prediction or uncertainty")
         anomaly_reasons = []

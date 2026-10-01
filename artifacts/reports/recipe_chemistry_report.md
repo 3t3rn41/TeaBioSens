@@ -28,4 +28,5 @@ Models are compared on grouped out-of-fold predictions. Fold-level R² is not us
 
 Validation evaluates `within-design reconstruction` on a held-out observed legal blend. It does not establish performance on arbitrary continuous or industrial recipes.
 
-Feature scaling is fitted inside each fold through sklearn Pipelines.
+Any learned feature scaling is fitted inside each fold through sklearn Pipelines.
+The quadratic Scheffe expansion is deterministic: four mixture-linear terms plus six pairwise interactions, fit without an intercept.

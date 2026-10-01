@@ -1,27 +1,27 @@
 {
   "observed": {
-    "n_targets_improved": 6,
-    "all_six_improved": true,
+    "n_targets_improved": 5,
+    "all_modeled_targets_improved": true,
     "gate_b_overall_pass": true,
     "selected_models": {
       "appearance": "catboost",
       "infusion_color": "pls",
       "aroma": "catboost",
       "taste": "ridge_a",
-      "solubility": "random_forest",
       "overall_score": "pls"
     }
   },
   "permutation_test": {
     "permutations": 200,
     "seed": 42,
-    "permutation_scheme": "joint row permutation of the six sample-level sensory means; recipe rows stay fixed",
+    "permutation_scheme": "joint row permutation of the five modeled sample-level sensory means; recipe rows stay fixed",
     "selection_rule": "repeat the direct Recipe->Sensory per-target selection over all installed candidate families in every permutation",
-    "six_of_six_exceedances": 19,
-    "six_of_six_empirical_p": 0.09950248756218906,
-    "six_of_six_null_rate_95pct_exact_ci": [
-      0.05816960972512029,
-      0.14437663997685246
+    "observed_n_targets_improved": 5,
+    "improvement_count_exceedances": 30,
+    "improvement_count_empirical_p": 0.15422885572139303,
+    "improvement_count_null_rate_95pct_exact_ci": [
+      0.10354952352186265,
+      0.20715870366855085
     ],
     "gate_b_exceedances": 96,
     "gate_b_empirical_p": 0.48258706467661694,
@@ -30,13 +30,12 @@
       0.551587601339426
     ],
     "null_distribution_n_targets_improved": {
-      "0": 46,
-      "1": 44,
-      "2": 23,
-      "3": 24,
-      "4": 22,
-      "5": 22,
-      "6": 19
+      "0": 56,
+      "1": 42,
+      "2": 25,
+      "3": 22,
+      "4": 25,
+      "5": 30
     }
   },
   "fold_sensitivity": {
@@ -123,27 +122,6 @@
       "leave_one_evaluation_fold_out_cases": 30,
       "jackknife_min_mae_improvement": 2.346406999400795,
       "jackknife_min_rmse_improvement": 2.014545517603823
-    },
-    "solubility": {
-      "selected_model": "random_forest",
-      "n_folds": 30,
-      "oof_mae": 2.678608417644761,
-      "mean_baseline_mae": 3.0526910074374576,
-      "mae_improvement": 0.3740825897926965,
-      "oof_rmse": 3.400382054297353,
-      "mean_baseline_rmse": 3.8890028948627506,
-      "rmse_improvement": 0.4886208405653978,
-      "folds_with_lower_absolute_error": 16,
-      "folds_with_lower_squared_error": 16,
-      "median_abs_error": 2.17473236296933,
-      "p90_abs_error": 5.407058650873392,
-      "max_abs_error": 8.56692383403363,
-      "worst_fold_sample_code": "S4",
-      "top3_share_of_positive_squared_error_gain": 0.4414571385835489,
-      "leave_one_evaluation_fold_out_preserves_both": 30,
-      "leave_one_evaluation_fold_out_cases": 30,
-      "jackknife_min_mae_improvement": 0.26824242292559086,
-      "jackknife_min_rmse_improvement": 0.38232502229489596
     },
     "overall_score": {
       "selected_model": "pls",
