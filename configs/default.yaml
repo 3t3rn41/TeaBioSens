@@ -1,0 +1,19 @@
+random_state: 42
+input_file: data/raw/TeaBioSens.xlsx
+grid_step: 0.025
+default_top_k: 10
+risk_lambda: 1.0
+diversity_min_linf: 0.05
+ingredient_columns:
+  - green_pct
+  - white_pct
+  - oolong_pct
+  - black_pct
+sensory_targets:
+  - appearance
+  - infusion_color
+  - aroma
+  - taste
+  - solubility
+  - overall_score
+

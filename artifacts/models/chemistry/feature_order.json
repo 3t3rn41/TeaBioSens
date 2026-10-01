@@ -1,0 +1,9 @@
+{
+  "features": [
+    "green_pct",
+    "white_pct",
+    "oolong_pct",
+    "black_pct"
+  ],
+  "random_state": 42
+}

@@ -1,0 +1,121 @@
+{
+  "status": "PASS_WITH_WARNINGS",
+  "sheet": "Sheet1",
+  "rows_with_header": 598,
+  "data_rows": 597,
+  "columns": 30,
+  "unique_sample_codes": 30,
+  "sample_counts": {
+    "S1": 20,
+    "S10": 20,
+    "S11": 20,
+    "S12": 20,
+    "S13": 20,
+    "S14": 20,
+    "S15": 20,
+    "S16": 20,
+    "S17": 20,
+    "S18": 20,
+    "S19": 20,
+    "S2": 20,
+    "S20": 20,
+    "S21": 20,
+    "S22": 20,
+    "S23": 20,
+    "S24": 20,
+    "S25": 20,
+    "S26": 20,
+    "S27": 20,
+    "S28": 20,
+    "S29": 20,
+    "S3": 20,
+    "S30": 17,
+    "S4": 20,
+    "S5": 20,
+    "S6": 20,
+    "S7": 20,
+    "S8": 20,
+    "S9": 20
+  },
+  "missing_values": 0,
+  "exact_duplicate_rows": 5,
+  "recipe_total_g": {
+    "min": 4.0,
+    "max": 4.0
+  },
+  "ratio_checks": {
+    "tp_theanine": {
+      "max_abs_difference": 0.0,
+      "allclose": true
+    },
+    "caf_tp": {
+      "max_abs_difference": 0.0,
+      "allclose": true
+    },
+    "protein_tp": {
+      "max_abs_difference": 0.0,
+      "allclose": true
+    },
+    "tf_tr": {
+      "max_abs_difference": 0.0,
+      "allclose": true
+    }
+  },
+  "design_space": {
+    "valid_point_count": 32,
+    "observed_point_count": 30,
+    "coverage": 0.9375,
+    "unobserved_points_g": [
+      [
+        0.5,
+        1.0,
+        1.5,
+        1.0
+      ],
+      [
+        0.5,
+        1.5,
+        0.5,
+        1.5
+      ]
+    ]
+  },
+  "sensory_summary": {
+    "Appearance": {
+      "min": 40.0,
+      "max": 100.0,
+      "mean": 75.45378559463987
+    },
+    "Infusion color": {
+      "min": 35.0,
+      "max": 100.0,
+      "mean": 74.71396817420435
+    },
+    "Aroma": {
+      "min": 24.3,
+      "max": 100.0,
+      "mean": 70.93068844221105
+    },
+    "Taste": {
+      "min": 20.0,
+      "max": 100.0,
+      "mean": 64.9709031959799
+    },
+    "Solubility": {
+      "min": 46.1,
+      "max": 100.0,
+      "mean": 82.26139028475713
+    },
+    "Overall score": {
+      "min": 45.099999999999994,
+      "max": 100.0,
+      "mean": 71.82359966499162
+    }
+  },
+  "errors": [],
+  "warnings": [
+    "5 exact duplicate rating row(s); retained as supplied"
+  ],
+  "input_file": "/home/ubuntu/work/data/raw/TeaBioSens.xlsx",
+  "input_sha256": "956415251daeb7463f2d7f6a9c13c84f10e404258442d04b01e9999f12dea0b1"
+}

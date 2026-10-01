@@ -1,0 +1,45 @@
+{
+  "task": "recipe_to_chemistry",
+  "features": [
+    "green_pct",
+    "white_pct",
+    "oolong_pct",
+    "black_pct"
+  ],
+  "targets": [
+    "protein_ug_g",
+    "tss_ug_g",
+    "tp_mggae_g",
+    "caffeine_pct",
+    "catechin_pct",
+    "tf_pct",
+    "tr_pct",
+    "ph",
+    "malic_acid_mg_g",
+    "citric_acid_mg_g",
+    "ascorbic_acid_mg_g",
+    "oxalic_acid_mg_g",
+    "galic_acid_mg_g",
+    "succinic_acid_mg_g",
+    "l_theanine_mg_g"
+  ],
+  "selected_models": {
+    "protein_ug_g": "gpr",
+    "tss_ug_g": "ridge_a",
+    "tp_mggae_g": "gpr",
+    "caffeine_pct": "pls",
+    "catechin_pct": "random_forest",
+    "tf_pct": "ridge_a",
+    "tr_pct": "ridge_a",
+    "ph": "ridge_a",
+    "malic_acid_mg_g": "gpr",
+    "citric_acid_mg_g": "pls",
+    "ascorbic_acid_mg_g": "ridge_b_no_intercept",
+    "oxalic_acid_mg_g": "ridge_a",
+    "galic_acid_mg_g": "ridge_a",
+    "succinic_acid_mg_g": "ridge_b_no_intercept",
+    "l_theanine_mg_g": "ridge_a"
+  },
+  "data_version": "1.0.0",
+  "random_state": 42
+}

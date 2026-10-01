@@ -1,0 +1,21 @@
+recipe_features: [green_pct, white_pct, oolong_pct, black_pct]
+linear_recipe_features: [green_pct, white_pct, oolong_pct]
+chemistry_base_targets:
+  - protein_ug_g
+  - tss_ug_g
+  - tp_mggae_g
+  - caffeine_pct
+  - catechin_pct
+  - tf_pct
+  - tr_pct
+  - ph
+  - malic_acid_mg_g
+  - citric_acid_mg_g
+  - ascorbic_acid_mg_g
+  - oxalic_acid_mg_g
+  - galic_acid_mg_g
+  - succinic_acid_mg_g
+  - l_theanine_mg_g
+chemistry_ratios: [tp_theanine, caf_tp, protein_tp, tf_tr]
+sensory_targets: [appearance, infusion_color, aroma, taste, solubility, overall_score]
+
